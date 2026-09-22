@@ -4,7 +4,10 @@ import {
     createUserWithEmailAndPassword, 
     signInWithEmailAndPassword, 
     signOut, 
-    onAuthStateChanged 
+    onAuthStateChanged,
+    updateEmail,
+    updatePassword,
+    deleteUser
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { 
     getFirestore, 
@@ -13,6 +16,7 @@ import {
     updateDoc, 
     deleteDoc, 
     doc, 
+    getDocs,
     onSnapshot, 
     serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -77,6 +81,13 @@ const authUserInfo = document.getElementById('auth-user-info');
 const authFormContainer = document.getElementById('auth-form-container');
 const userEmailDisplay = document.getElementById('user-email-display');
 const btnLogout = document.getElementById('btn-logout');
+
+// Account Settings UI
+const formUpdateEmail = document.getElementById('form-update-email');
+const inputUpdateEmail = document.getElementById('input-update-email');
+const formUpdatePassword = document.getElementById('form-update-password');
+const inputUpdatePassword = document.getElementById('input-update-password');
+const btnDeleteAccount = document.getElementById('btn-delete-account');
 
 // Item Form Inputs
 const nameInput = document.getElementById('input-name');
@@ -550,6 +561,8 @@ function openAuthModal() {
         authUserInfo.classList.remove('hidden');
         authFormContainer.classList.add('hidden');
         userEmailDisplay.textContent = currentUser.email || 'Anonymous Adventurer';
+        if (inputUpdateEmail) inputUpdateEmail.value = '';
+        if (inputUpdatePassword) inputUpdatePassword.value = '';
     } else {
         authUserInfo.classList.add('hidden');
         authFormContainer.classList.remove('hidden');
@@ -603,6 +616,82 @@ async function handleLogout() {
     }
 }
 
+// Account Settings Handlers
+async function handleUpdateEmail(e) {
+    e.preventDefault();
+    if (!currentUser) return;
+
+    const newEmail = inputUpdateEmail.value.trim();
+    if (!newEmail) return;
+
+    try {
+        await updateEmail(currentUser, newEmail);
+        userEmailDisplay.textContent = newEmail;
+        inputUpdateEmail.value = '';
+        showError("Email updated successfully.");
+    } catch (err) {
+        console.error("Update email error:", err);
+        if (err.code === 'auth/requires-recent-login') {
+            showError("Please sign out and sign in again before updating email.");
+        } else {
+            showError(err.message.replace("Firebase: ", ""));
+        }
+    }
+}
+
+async function handleUpdatePassword(e) {
+    e.preventDefault();
+    if (!currentUser) return;
+
+    const newPassword = inputUpdatePassword.value;
+    if (!newPassword || newPassword.length < 6) {
+        showError("Password must be at least 6 characters.");
+        return;
+    }
+
+    try {
+        await updatePassword(currentUser, newPassword);
+        inputUpdatePassword.value = '';
+        showError("Password updated successfully.");
+    } catch (err) {
+        console.error("Update password error:", err);
+        if (err.code === 'auth/requires-recent-login') {
+            showError("Please sign out and sign in again before changing password.");
+        } else {
+            showError(err.message.replace("Firebase: ", ""));
+        }
+    }
+}
+
+async function handleDeleteAccount() {
+    if (!currentUser) return;
+
+    const confirmed = confirm("Are you sure you want to delete your account? This will permanently delete your items and release your email address.");
+    if (!confirmed) return;
+
+    try {
+        const uid = currentUser.uid;
+        
+        // Delete Firestore documents for user
+        const itemsCollectionRef = collection(db, 'users', uid, 'dnd_items');
+        const snapshot = await getDocs(itemsCollectionRef);
+        const deletePromises = snapshot.docs.map(docSnap => deleteDoc(doc(db, 'users', uid, 'dnd_items', docSnap.id)));
+        await Promise.all(deletePromises);
+
+        // Delete user account from Firebase Auth
+        await deleteUser(currentUser);
+        closeAuthModal();
+        showError("Account deleted successfully.");
+    } catch (err) {
+        console.error("Delete account error:", err);
+        if (err.code === 'auth/requires-recent-login') {
+            showError("Please sign out and sign in again before deleting your account.");
+        } else {
+            showError(err.message.replace("Firebase: ", ""));
+        }
+    }
+}
+
 // Amount Modal Handlers
 function openAmountModal(itemId, type) {
     pendingAction = { itemId, type };
@@ -645,6 +734,10 @@ tabLogin.addEventListener('click', () => setAuthMode('login'));
 tabRegister.addEventListener('click', () => setAuthMode('register'));
 authForm.addEventListener('submit', handleAuthSubmit);
 btnLogout.addEventListener('click', handleLogout);
+
+if (formUpdateEmail) formUpdateEmail.addEventListener('submit', handleUpdateEmail);
+if (formUpdatePassword) formUpdatePassword.addEventListener('submit', handleUpdatePassword);
+if (btnDeleteAccount) btnDeleteAccount.addEventListener('click', handleDeleteAccount);
 
 document.getElementById('property-modal-close').addEventListener('click', () => propertyModal.classList.add('hidden'));
 
