@@ -1,0 +1,39 @@
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #111827; /* Tailwind gray-900 */
+    color: #f3f4f6; /* Tailwind gray-100 */
+    -webkit-tap-highlight-color: transparent;
+}
+
+.hp-bar-transition {
+    transition: width 0.3s ease-in-out, background-color 0.3s ease;
+}
+
+.modal-overlay {
+    background-color: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(4px);
+}
+
+/* Hide scrollbar for clean app look */
+::-webkit-scrollbar {
+    width: 0px;
+    background: transparent;
+}
+
+/* Custom color picker styling */
+input[type="color"] {
+    -webkit-appearance: none;
+    border: none;
+    border-radius: 8px;
+    width: 100%;
+    height: 48px;
+    padding: 0;
+    cursor: pointer;
+}
+input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+input[type="color"]::-webkit-color-swatch {
+    border: none;
+    border-radius: 8px;
+}

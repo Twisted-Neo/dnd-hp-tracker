@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>D&D HP Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="min-h-screen relative pb-24">
+    <div class="max-w-md mx-auto w-full px-4 pt-6">
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-2xl font-bold text-white tracking-tight">Loot & Life</h1>
+                <p class="text-sm text-gray-400">D&D HP Tracker</p>
+            </div>
+            <!-- Sync indicator -->
+            <div id="sync-status" class="flex items-center text-xs text-green-400 bg-gray-800 px-2 py-1 rounded-full border border-gray-700">
+                <i class="fas fa-cloud-check mr-1.5"></i> Saved
+            </div>
+        </header>
+
+        <!-- Container for all HP boxes -->
+        <main id="items-container" class="flex flex-col gap-4">
+            <!-- Loading state -->
+            <div id="loading-state" class="text-center text-gray-500 py-10 flex flex-col items-center">
+                <i class="fas fa-dice-d20 fa-spin text-3xl mb-3"></i>
+                <p>Loading items...</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- Floating Action Button for adding new items -->
+    <button id="fab-add" class="fixed bottom-6 right-6 lg:right-auto lg:left-1/2 lg:ml-[160px] w-14 h-14 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg shadow-red-900/50 flex justify-center items-center text-2xl transition-transform active:scale-95 z-40">
+        <i class="fas fa-plus"></i>
+    </button>
+
+    <!-- Add/Edit Item Modal -->
+    <div id="item-modal" class="fixed inset-0 modal-overlay z-50 hidden flex flex-col justify-end sm:justify-center items-center pb-0 sm:pb-10">
+        <div class="bg-gray-800 w-full max-w-md rounded-t-2xl sm:rounded-2xl p-6 shadow-2xl border border-gray-700 transform transition-transform translate-y-0 relative">
+            <button id="modal-close" class="absolute top-4 right-4 text-gray-400 hover:text-white p-2">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+            <h2 class="text-xl font-bold mb-5" id="modal-title">Track New Item</h2>
+            
+            <form id="item-form" class="flex flex-col gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-300 mb-1">Item/Character Name</label>
+                    <input type="text" id="input-name" required class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500" placeholder="e.g. Magic Shield, Familiar...">
+                </div>
+                
+                <div class="flex gap-4">
+                    <div class="flex-1">
+                        <label class="block text-sm font-semibold text-gray-300 mb-1">Current HP</label>
+                        <input type="number" id="input-current-hp" required class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500" placeholder="0">
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-sm font-semibold text-gray-300 mb-1">Max HP</label>
+                        <input type="number" id="input-max-hp" required class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500" placeholder="0">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-300 mb-1">Box Color</label>
+                    <input type="color" id="input-color" value="#3b82f6">
+                </div>
+
+                <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3.5 rounded-lg mt-2 transition-colors active:bg-red-800">
+                    Save Item
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Amount Input Modal (For Long Press) -->
+    <div id="amount-modal" class="fixed inset-0 modal-overlay z-[60] hidden flex flex-col justify-center items-center px-4">
+        <div class="bg-gray-800 w-full max-w-xs rounded-2xl p-6 shadow-2xl border border-gray-700 transform transition-transform">
+            <h3 id="amount-modal-title" class="text-xl font-bold mb-4 text-white text-center">Modify HP</h3>
+            <input type="number" id="amount-input" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 mb-5 text-center text-xl font-bold" placeholder="Enter amount" min="1">
+            <div class="flex gap-3">
+                <button id="amount-cancel" class="flex-1 py-3 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-semibold transition-colors">Cancel</button>
+                <button id="amount-confirm" class="flex-1 py-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold transition-colors">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Toast -->
+    <div id="error-toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-900 text-red-100 px-4 py-2 rounded-lg shadow-lg z-50 hidden opacity-0 transition-opacity flex items-center gap-2">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span id="error-message"></span>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>

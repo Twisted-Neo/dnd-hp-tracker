@@ -1,0 +1,17 @@
+{
+  "appId": "dnd-tracker-default",
+  "defaultItems": [
+    {
+      "name": "Magic Shield",
+      "currentHp": 15,
+      "maxHp": 20,
+      "color": "#3b82f6"
+    },
+    {
+      "name": "Familiar",
+      "currentHp": 8,
+      "maxHp": 8,
+      "color": "#10b981"
+    }
+  ]
+}
