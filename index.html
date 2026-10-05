@@ -37,7 +37,8 @@
     </header>
 
     <!-- Main Container -->
-    <main class="max-w-md mx-auto w-full px-4 pt-5">
+    <main class="max-w-md mx-auto w-full px-4 pt-5 pb-8">
+        
         <!-- Account Status Banner -->
         <div id="auth-banner" class="hidden mb-4 p-3 bg-amber-950/40 border border-amber-800/50 rounded-xl flex items-center justify-between text-xs text-amber-200">
             <div class="flex items-center gap-2">
@@ -47,28 +48,77 @@
             <button id="banner-login-btn" class="font-bold underline hover:text-white shrink-0 ml-2">Sign In</button>
         </div>
 
-        <!-- Items List -->
-        <div id="items-container" class="flex flex-col gap-3.5">
-            <!-- Loading State -->
-            <div id="loading-state" class="text-center text-slate-500 py-16 flex flex-col items-center">
-                <i class="fas fa-dice-d20 fa-spin text-4xl mb-3 text-red-500/80"></i>
-                <p class="font-medium">Syncing campaign database...</p>
+        <!-- VIEW: ItemHP -->
+        <div id="view-itemhp">
+            <div id="items-container" class="flex flex-col gap-3.5">
+                <div id="loading-state" class="text-center text-slate-500 py-16 flex flex-col items-center">
+                    <i class="fas fa-dice-d20 fa-spin text-4xl mb-3 text-red-500/80"></i>
+                    <p class="font-medium">Syncing campaign database...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: Spell Circle -->
+        <div id="view-spellcircle" class="hidden">
+            <div class="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 flex flex-col items-center shadow-lg mb-6">
+                <h2 class="text-sm font-bold text-slate-300 mb-2 uppercase tracking-widest">Draw Combination</h2>
+                
+                <!-- Drawing Canvas -->
+                <div id="spell-canvas-container" class="relative w-[260px] h-[260px] my-2 bg-slate-950 rounded-full border border-slate-800 shadow-inner">
+                    <svg id="spell-lines" class="absolute inset-0 w-full h-full pointer-events-none z-10"></svg>
+                    <!-- Dots will be injected here via JS -->
+                </div>
+
+                <button id="btn-clear-spell" class="text-xs font-bold text-slate-500 hover:text-slate-300 mt-3 py-1 px-3 rounded-lg border border-slate-800 hover:border-slate-600 transition-colors">
+                    <i class="fas fa-rotate-left mr-1"></i> Clear Pattern
+                </button>
+            </div>
+
+            <!-- Save Combination Form -->
+            <form id="spell-form" class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-lg mb-8">
+                <h3 class="text-sm font-bold text-white mb-3">Save Combination</h3>
+                <div class="flex flex-col gap-3">
+                    <input type="text" id="spell-name" required placeholder="Spell Name (e.g. Fireball)" class="bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-red-500">
+                    <textarea id="spell-desc" required placeholder="Effect Description..." class="bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-red-500 resize-none h-20"></textarea>
+                    <button type="submit" id="btn-save-spell" disabled class="w-full bg-slate-800 text-slate-500 font-bold py-3 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                        Save Pattern
+                    </button>
+                </div>
+            </form>
+
+            <!-- Saved Combinations List -->
+            <div>
+                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-3 px-1">Saved Spells</h3>
+                <div id="saved-spells-container" class="flex flex-col gap-3">
+                    <!-- Spells injected here -->
+                </div>
             </div>
         </div>
     </main>
 
+    <!-- Bottom Navigation -->
+    <nav class="fixed bottom-0 w-full bg-slate-900/95 backdrop-blur-md border-t border-slate-800 z-30 pb-safe">
+        <div class="max-w-md mx-auto flex justify-evenly items-center h-16">
+            <button id="tab-itemhp" class="flex-1 h-full flex flex-col items-center justify-center text-red-400 font-bold border-t-2 border-red-500 transition-colors">
+                <i class="fas fa-shield-cat text-lg mb-1"></i>
+                <span class="text-[10px] uppercase tracking-wider">ItemHP</span>
+            </button>
+            <button id="tab-spellcircle" class="flex-1 h-full flex flex-col items-center justify-center text-slate-500 hover:text-slate-300 font-bold border-t-2 border-transparent transition-colors">
+                <i class="fas fa-circle-nodes text-lg mb-1"></i>
+                <span class="text-[10px] uppercase tracking-wider">Spell Circle</span>
+            </button>
+        </div>
+    </nav>
+
     <!-- Floating Action Button -->
-    <button id="fab-add" class="fixed bottom-6 right-6 lg:right-auto lg:left-1/2 lg:ml-[150px] w-14 h-14 bg-gradient-to-tr from-red-700 to-red-500 hover:from-red-600 hover:to-red-400 text-white rounded-2xl shadow-xl shadow-red-950/80 flex justify-center items-center text-2xl transition-all duration-200 active:scale-95 z-40 border border-red-400/30">
+    <button id="fab-add" class="fixed bottom-20 right-6 lg:right-auto lg:left-1/2 lg:ml-[150px] w-14 h-14 bg-gradient-to-tr from-red-700 to-red-500 hover:from-red-600 hover:to-red-400 text-white rounded-2xl shadow-xl shadow-red-950/80 flex justify-center items-center text-2xl transition-all duration-200 active:scale-95 z-40 border border-red-400/30">
         <i class="fas fa-plus"></i>
     </button>
 
-    <!-- Authentication Modal -->
-    <div id="auth-modal" class="fixed inset-0 modal-overlay z-50 hidden flex flex-col justify-end sm:justify-center items-center p-0 sm:p-4">
+    <!-- Authentication Modal (Unchanged structurally, just ensuring it stays above new elements) -->
+    <div id="auth-modal" class="fixed inset-0 modal-overlay z-[60] hidden flex flex-col justify-end sm:justify-center items-center p-0 sm:p-4">
         <div class="bg-slate-900 w-full max-w-md rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl border border-slate-800 relative max-h-[90vh] overflow-y-auto">
-            <button id="auth-modal-close" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2">
-                <i class="fas fa-xmark text-lg"></i>
-            </button>
-            
+            <button id="auth-modal-close" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2"><i class="fas fa-xmark text-lg"></i></button>
             <div id="auth-user-info" class="hidden text-left py-2">
                 <div class="text-center mb-4">
                     <div class="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-3 border border-slate-700">
@@ -77,30 +127,21 @@
                     <h3 class="text-lg font-bold text-white mb-1">Account Settings</h3>
                     <p id="user-email-display" class="text-xs text-slate-400 font-mono"></p>
                 </div>
-
                 <div class="flex flex-col gap-4 border-t border-slate-800 pt-4">
-                    <!-- Update Email Form -->
                     <div>
                         <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Update Email</label>
                         <form id="form-update-email" class="flex gap-2">
                             <input type="email" id="input-update-email" required class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500" placeholder="New email address">
-                            <button type="submit" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-2 rounded-xl border border-slate-700 transition-colors shrink-0">
-                                Update
-                            </button>
+                            <button type="submit" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-2 rounded-xl border border-slate-700 transition-colors shrink-0">Update</button>
                         </form>
                     </div>
-
-                    <!-- Update Password Form -->
                     <div>
                         <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Change Password</label>
                         <form id="form-update-password" class="flex gap-2">
                             <input type="password" id="input-update-password" required minlength="6" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500" placeholder="New password">
-                            <button type="submit" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-2 rounded-xl border border-slate-700 transition-colors shrink-0">
-                                Change
-                            </button>
+                            <button type="submit" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-2 rounded-xl border border-slate-700 transition-colors shrink-0">Change</button>
                         </form>
                     </div>
-
                     <div class="border-t border-slate-800 pt-4 flex flex-col gap-2.5">
                         <button id="btn-logout" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-bold py-2.5 rounded-xl transition-colors text-xs flex items-center justify-center">
                             <i class="fas fa-right-from-bracket mr-2"></i> Sign Out
@@ -117,7 +158,6 @@
                     <button id="tab-login" class="flex-1 pb-3 text-center font-bold text-red-400 border-b-2 border-red-500">Sign In</button>
                     <button id="tab-register" class="flex-1 pb-3 text-center font-bold text-slate-500 hover:text-slate-300">Register</button>
                 </div>
-
                 <form id="auth-form" class="flex flex-col gap-4">
                     <div>
                         <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Email Address</label>
@@ -127,7 +167,6 @@
                         <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Password</label>
                         <input type="password" id="auth-password" required minlength="6" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500" placeholder="••••••••">
                     </div>
-
                     <button type="submit" id="auth-submit-btn" class="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold py-3.5 rounded-xl mt-2 transition-all shadow-lg shadow-red-950/50">
                         Sign In
                     </button>
@@ -136,20 +175,19 @@
         </div>
     </div>
 
-    <!-- Add/Edit Item Modal -->
-    <div id="item-modal" class="fixed inset-0 modal-overlay z-50 hidden flex flex-col justify-end sm:justify-center items-center p-0 sm:p-4">
+    <!-- Keep existing modals (Item, Property, Amount) hidden by default with correct z-index -->
+    <div id="item-modal" class="fixed inset-0 modal-overlay z-[60] hidden flex flex-col justify-end sm:justify-center items-center p-0 sm:p-4">
+        <!-- Exact same modal content as before -->
         <div class="bg-slate-900 w-full max-w-md rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl border border-slate-800 max-h-[90vh] overflow-y-auto relative">
             <button id="modal-close" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2">
                 <i class="fas fa-xmark text-lg"></i>
             </button>
             <h2 class="text-lg font-bold text-white mb-4" id="modal-title">Track New Item</h2>
-            
             <form id="item-form" class="flex flex-col gap-4">
                 <div>
                     <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Item or Creature Name</label>
-                    <input type="text" id="input-name" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500" placeholder="e.g. Shield of Faith, Familiar...">
+                    <input type="text" id="input-name" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500" placeholder="e.g. Shield of Faith...">
                 </div>
-                
                 <div class="flex gap-3">
                     <div class="flex-1">
                         <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Current HP</label>
@@ -160,13 +198,10 @@
                         <input type="number" id="input-max-hp" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500" placeholder="0">
                     </div>
                 </div>
-
                 <div>
                     <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Accent Color</label>
                     <input type="color" id="input-color" value="#3b82f6" class="w-full h-10 rounded-xl cursor-pointer">
                 </div>
-
-                <!-- Properties Section -->
                 <div class="border-t border-slate-800 pt-4 mt-1">
                     <div class="flex justify-between items-center mb-3">
                         <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Item Properties</label>
@@ -174,12 +209,8 @@
                             <i class="fas fa-plus"></i> Add Property
                         </button>
                     </div>
-
-                    <div id="properties-editor-list" class="flex flex-col gap-2.5">
-                        <!-- Dynamic property inputs will be rendered here -->
-                    </div>
+                    <div id="properties-editor-list" class="flex flex-col gap-2.5"></div>
                 </div>
-
                 <button type="submit" class="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold py-3.5 rounded-xl mt-3 transition-all shadow-lg shadow-red-950/50">
                     Save Item
                 </button>
@@ -187,7 +218,7 @@
         </div>
     </div>
 
-    <!-- Property Popup Modal -->
+    <!-- Remaining modals intact... -->
     <div id="property-modal" class="fixed inset-0 modal-overlay z-[70] hidden flex flex-col justify-center items-center p-4">
         <div class="bg-slate-900 w-full max-w-xs rounded-2xl p-5 shadow-2xl border border-slate-800 relative transform transition-all">
             <button id="property-modal-close" class="absolute top-3 right-3 text-slate-400 hover:text-white p-1">
@@ -199,13 +230,10 @@
                 </div>
                 <h3 id="prop-display-title" class="text-base font-bold text-white leading-snug">Property Title</h3>
             </div>
-            <p id="prop-display-desc" class="text-sm text-slate-300 leading-relaxed bg-slate-950 p-3 rounded-xl border border-slate-800/80">
-                Property description snippet...
-            </p>
+            <p id="prop-display-desc" class="text-sm text-slate-300 leading-relaxed bg-slate-950 p-3 rounded-xl border border-slate-800/80"></p>
         </div>
     </div>
 
-    <!-- Amount Input Modal (For HP Quick Change) -->
     <div id="amount-modal" class="fixed inset-0 modal-overlay z-[60] hidden flex flex-col justify-center items-center p-4">
         <div class="bg-slate-900 w-full max-w-xs rounded-2xl p-6 shadow-2xl border border-slate-800">
             <h3 id="amount-modal-title" class="text-lg font-bold mb-4 text-white text-center">Modify HP</h3>
@@ -217,8 +245,7 @@
         </div>
     </div>
 
-    <!-- Toast Notification -->
-    <div id="error-toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-950 border border-red-800 text-red-200 px-4 py-2.5 rounded-xl shadow-xl z-50 hidden opacity-0 transition-opacity flex items-center gap-2 text-xs font-semibold">
+    <div id="error-toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-950 border border-red-800 text-red-200 px-4 py-2.5 rounded-xl shadow-xl z-[100] hidden opacity-0 transition-opacity flex items-center gap-2 text-xs font-semibold">
         <i class="fas fa-triangle-exclamation text-red-400"></i>
         <span id="error-message"></span>
     </div>

@@ -16,29 +16,35 @@ body {
 ::-webkit-scrollbar {
     width: 4px;
 }
-
 ::-webkit-scrollbar-track {
     background: transparent;
 }
-
 ::-webkit-scrollbar-thumb {
     background: #334155;
     border-radius: 4px;
 }
 
-/* Custom Color Picker Input */
+/* Custom Color Picker */
 input[type="color"] {
     -webkit-appearance: none;
     border: none;
     padding: 0;
     cursor: pointer;
 }
-
 input[type="color"]::-webkit-color-swatch-wrapper {
     padding: 0;
 }
-
 input[type="color"]::-webkit-color-swatch {
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 0.75rem;
+}
+
+/* Spell Circle specific */
+#spell-canvas-container {
+    touch-action: none; /* Prevents pull-to-refresh and page scroll while drawing */
+}
+
+/* Safe area padding for bottom nav on mobile */
+.pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
 }
