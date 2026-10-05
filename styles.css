@@ -44,6 +44,11 @@ input[type="color"]::-webkit-color-swatch {
     touch-action: none; /* Prevents pull-to-refresh and page scroll while drawing */
 }
 
+.circle-number {
+  user-select: none;
+  -webkit-user-select: none; /* Safari */
+}
+
 /* Safe area padding for bottom nav on mobile */
 .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);
