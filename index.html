@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Loot & Life - D&D HP Tracker</title>
+    <title>Neo Tools - D&D tools made by Neo Nieminen</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
@@ -19,7 +19,7 @@
                     <i class="fas fa-shield-cat text-lg"></i>
                 </div>
                 <div>
-                    <h1 class="text-base font-extrabold tracking-tight text-white leading-none">Loot & Life</h1>
+                    <h1 class="text-base font-extrabold tracking-tight text-white leading-none">Neo Tools</h1>
                     <p class="text-[11px] font-medium text-slate-400 mt-0.5">D&D HP & Trait Tracker</p>
                 </div>
             </div>
@@ -60,7 +60,7 @@
 
         <!-- VIEW: Spell Circle -->
         <div id="view-spellcircle" class="hidden">
-            <div class="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 flex flex-col items-center shadow-lg mb-6">
+            <div class="card-panel flex flex-col items-center mb-6">
                 <h2 class="text-sm font-bold text-slate-300 mb-2 uppercase tracking-widest">Draw Combination</h2>
                 
                 <!-- Drawing Canvas -->
@@ -69,18 +69,18 @@
                     <!-- Dots will be injected here via JS -->
                 </div>
 
-                <button id="btn-clear-spell" class="text-xs font-bold text-slate-500 hover:text-slate-300 mt-3 py-1 px-3 rounded-lg border border-slate-800 hover:border-slate-600 transition-colors">
+                <button id="btn-clear-spell" class="btn-secondary text-xs font-bold py-1 px-3 border border-slate-800 hover:border-slate-600 mt-3">
                     <i class="fas fa-rotate-left mr-1"></i> Clear Pattern
                 </button>
             </div>
 
             <!-- Save Combination Form -->
-            <form id="spell-form" class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-lg mb-8">
+            <form id="spell-form" class="card-panel mb-8">
                 <h3 class="text-sm font-bold text-white mb-3">Save Combination</h3>
                 <div class="flex flex-col gap-3">
-                    <input type="text" id="spell-name" required placeholder="Spell Name (e.g. Fireball)" class="bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-red-500">
-                    <textarea id="spell-desc" required placeholder="Effect Description..." class="bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-red-500 resize-none h-20"></textarea>
-                    <button type="submit" id="btn-save-spell" disabled class="w-full bg-slate-800 text-slate-500 font-bold py-3 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                    <input type="text" id="spell-name" required placeholder="Spell Name (e.g. Fireball)" class="form-input">
+                    <textarea id="spell-desc" required placeholder="Effect Description..." class="form-textarea resize-none h-20"></textarea>
+                    <button type="submit" id="btn-save-spell" disabled class="btn-primary">
                         Save Pattern
                     </button>
                 </div>
@@ -115,10 +115,10 @@
         <i class="fas fa-plus"></i>
     </button>
 
-    <!-- Authentication Modal (Unchanged structurally, just ensuring it stays above new elements) -->
+    <!-- Authentication Modal -->
     <div id="auth-modal" class="fixed inset-0 modal-overlay z-[60] hidden flex flex-col justify-end sm:justify-center items-center p-0 sm:p-4">
-        <div class="bg-slate-900 w-full max-w-md rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl border border-slate-800 relative max-h-[90vh] overflow-y-auto">
-            <button id="auth-modal-close" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2"><i class="fas fa-xmark text-lg"></i></button>
+        <div class="modal-card">
+            <button id="auth-modal-close" class="modal-close-btn"><i class="fas fa-xmark text-lg"></i></button>
             <div id="auth-user-info" class="hidden text-left py-2">
                 <div class="text-center mb-4">
                     <div class="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-3 border border-slate-700">
@@ -129,21 +129,21 @@
                 </div>
                 <div class="flex flex-col gap-4 border-t border-slate-800 pt-4">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Update Email</label>
+                        <label class="form-label">Update Email</label>
                         <form id="form-update-email" class="flex gap-2">
-                            <input type="email" id="input-update-email" required class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500" placeholder="New email address">
-                            <button type="submit" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-2 rounded-xl border border-slate-700 transition-colors shrink-0">Update</button>
+                            <input type="email" id="input-update-email" required class="form-input text-xs py-2 px-3" placeholder="New email address">
+                            <button type="submit" class="btn-secondary text-xs font-bold px-3 py-2 border border-slate-700 shrink-0">Update</button>
                         </form>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Change Password</label>
+                        <label class="form-label">Change Password</label>
                         <form id="form-update-password" class="flex gap-2">
-                            <input type="password" id="input-update-password" required minlength="6" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500" placeholder="New password">
-                            <button type="submit" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-2 rounded-xl border border-slate-700 transition-colors shrink-0">Change</button>
+                            <input type="password" id="input-update-password" required minlength="6" class="form-input text-xs py-2 px-3" placeholder="New password">
+                            <button type="submit" class="btn-secondary text-xs font-bold px-3 py-2 border border-slate-700 shrink-0">Change</button>
                         </form>
                     </div>
                     <div class="border-t border-slate-800 pt-4 flex flex-col gap-2.5">
-                        <button id="btn-logout" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-bold py-2.5 rounded-xl transition-colors text-xs flex items-center justify-center">
+                        <button id="btn-logout" class="btn-secondary w-full border border-slate-700 font-bold py-2.5 text-xs flex items-center justify-center">
                             <i class="fas fa-right-from-bracket mr-2"></i> Sign Out
                         </button>
                         <button id="btn-delete-account" class="w-full bg-red-950/60 hover:bg-red-900/80 text-red-400 border border-red-800/80 font-bold py-2.5 rounded-xl transition-colors text-xs flex items-center justify-center">
@@ -160,14 +160,14 @@
                 </div>
                 <form id="auth-form" class="flex flex-col gap-4">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Email Address</label>
-                        <input type="email" id="auth-email" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500" placeholder="adventurer@realm.com">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" id="auth-email" required class="form-input" placeholder="adventurer@realm.com">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Password</label>
-                        <input type="password" id="auth-password" required minlength="6" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500" placeholder="••••••••">
+                        <label class="form-label">Password</label>
+                        <input type="password" id="auth-password" required minlength="6" class="form-input" placeholder="••••••••">
                     </div>
-                    <button type="submit" id="auth-submit-btn" class="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold py-3.5 rounded-xl mt-2 transition-all shadow-lg shadow-red-950/50">
+                    <button type="submit" id="auth-submit-btn" class="btn-primary mt-2">
                         Sign In
                     </button>
                 </form>
@@ -175,53 +175,52 @@
         </div>
     </div>
 
-    <!-- Keep existing modals (Item, Property, Amount) hidden by default with correct z-index -->
+    <!-- Item Modal -->
     <div id="item-modal" class="fixed inset-0 modal-overlay z-[60] hidden flex flex-col justify-end sm:justify-center items-center p-0 sm:p-4">
-        <!-- Exact same modal content as before -->
-        <div class="bg-slate-900 w-full max-w-md rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl border border-slate-800 max-h-[90vh] overflow-y-auto relative">
-            <button id="modal-close" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2">
+        <div class="modal-card">
+            <button id="modal-close" class="modal-close-btn">
                 <i class="fas fa-xmark text-lg"></i>
             </button>
             <h2 class="text-lg font-bold text-white mb-4" id="modal-title">Track New Item</h2>
             <form id="item-form" class="flex flex-col gap-4">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Item or Creature Name</label>
-                    <input type="text" id="input-name" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500" placeholder="e.g. Shield of Faith...">
+                    <label class="form-label">Item or Creature Name</label>
+                    <input type="text" id="input-name" required class="form-input" placeholder="e.g. Shield of Faith...">
                 </div>
                 <div class="flex gap-3">
                     <div class="flex-1">
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Current HP</label>
-                        <input type="number" id="input-current-hp" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500" placeholder="0">
+                        <label class="form-label">Current HP</label>
+                        <input type="number" id="input-current-hp" required class="form-input" placeholder="0">
                     </div>
                     <div class="flex-1">
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Max HP</label>
-                        <input type="number" id="input-max-hp" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500" placeholder="0">
+                        <label class="form-label">Max HP</label>
+                        <input type="number" id="input-max-hp" required class="form-input" placeholder="0">
                     </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Accent Color</label>
+                    <label class="form-label">Accent Color</label>
                     <input type="color" id="input-color" value="#3b82f6" class="w-full h-10 rounded-xl cursor-pointer">
                 </div>
                 <div class="border-t border-slate-800 pt-4 mt-1">
                     <div class="flex justify-between items-center mb-3">
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Item Properties</label>
+                        <label class="form-label !mb-0">Item Properties</label>
                         <button type="button" id="btn-add-property" class="text-xs text-red-400 hover:text-red-300 font-bold flex items-center gap-1">
                             <i class="fas fa-plus"></i> Add Property
                         </button>
                     </div>
                     <div id="properties-editor-list" class="flex flex-col gap-2.5"></div>
                 </div>
-                <button type="submit" class="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold py-3.5 rounded-xl mt-3 transition-all shadow-lg shadow-red-950/50">
+                <button type="submit" class="btn-primary mt-3">
                     Save Item
                 </button>
             </form>
         </div>
     </div>
 
-    <!-- Remaining modals intact... -->
+    <!-- Property Modal -->
     <div id="property-modal" class="fixed inset-0 modal-overlay z-[70] hidden flex flex-col justify-center items-center p-4">
         <div class="bg-slate-900 w-full max-w-xs rounded-2xl p-5 shadow-2xl border border-slate-800 relative transform transition-all">
-            <button id="property-modal-close" class="absolute top-3 right-3 text-slate-400 hover:text-white p-1">
+            <button id="property-modal-close" class="modal-close-btn !top-3 !right-3">
                 <i class="fas fa-xmark text-lg"></i>
             </button>
             <div class="flex items-center gap-3 mb-3">
@@ -234,13 +233,14 @@
         </div>
     </div>
 
+    <!-- Amount Modal -->
     <div id="amount-modal" class="fixed inset-0 modal-overlay z-[60] hidden flex flex-col justify-center items-center p-4">
         <div class="bg-slate-900 w-full max-w-xs rounded-2xl p-6 shadow-2xl border border-slate-800">
             <h3 id="amount-modal-title" class="text-lg font-bold mb-4 text-white text-center">Modify HP</h3>
-            <input type="number" id="amount-input" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 mb-5 text-center text-2xl font-bold" placeholder="0" min="1">
+            <input type="number" id="amount-input" class="form-input text-center text-2xl font-bold mb-5" placeholder="0" min="1">
             <div class="flex gap-2.5">
-                <button id="amount-cancel" class="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold transition-colors text-sm">Cancel</button>
-                <button id="amount-confirm" class="flex-1 py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold transition-colors text-sm">Confirm</button>
+                <button id="amount-cancel" class="btn-secondary flex-1 text-sm">Cancel</button>
+                <button id="amount-confirm" class="btn-primary flex-1 text-sm py-3 shadow-none">Confirm</button>
             </div>
         </div>
     </div>

@@ -190,7 +190,7 @@ function initSpellCircle() {
         dotCoords.push({ x, y });
 
         const dot = document.createElement('div');
-        dot.className = 'absolute w-6 h-6 -ml-3 -mt-3 rounded-full bg-slate-800 border-2 border-slate-600 z-20 flex justify-center items-center text-[10px] text-slate-500 font-bold pointer-events-none transition-colors';
+        dot.className = 'select-none absolute w-6 h-6 -ml-3 -mt-3 rounded-full bg-slate-800 border-2 border-slate-600 z-20 flex justify-center items-center text-[10px] text-slate-500 font-bold pointer-events-none transition-colors';
         dot.style.left = `${x}px`;
         dot.style.top = `${y}px`;
         dot.id = `spell-dot-${i}`;
@@ -287,7 +287,7 @@ function renderActivePattern(tempX = null, tempY = null) {
     // Reset all dots
     for (let i = 0; i < 12; i++) {
         const dot = document.getElementById(`spell-dot-${i}`);
-        dot.className = 'absolute w-6 h-6 -ml-3 -mt-3 rounded-full bg-slate-800 border-2 border-slate-600 z-20 flex justify-center items-center text-[10px] text-slate-500 font-bold pointer-events-none transition-colors';
+        dot.className = 'select-none absolute w-6 h-6 -ml-3 -mt-3 rounded-full bg-slate-800 border-2 border-slate-600 z-20 flex justify-center items-center text-[10px] text-slate-500 font-bold pointer-events-none transition-colors';
     }
 
     if (currentSpellSequence.length === 0) return;
@@ -313,9 +313,9 @@ function renderActivePattern(tempX = null, tempY = null) {
     currentSpellSequence.forEach((idx, order) => {
         const dot = document.getElementById(`spell-dot-${idx}`);
         if (order === 0) {
-            dot.className = 'absolute w-6 h-6 -ml-3 -mt-3 rounded-full bg-red-600 border-2 border-white z-20 flex justify-center items-center text-[10px] text-white font-bold pointer-events-none';
+            dot.className = 'select-none absolute w-6 h-6 -ml-3 -mt-3 rounded-full bg-red-600 border-2 border-white z-20 flex justify-center items-center text-[10px] text-white font-bold pointer-events-none';
         } else {
-            dot.className = 'absolute w-6 h-6 -ml-3 -mt-3 rounded-full bg-red-500 border-2 border-red-300 z-20 flex justify-center items-center text-[10px] text-white font-bold pointer-events-none';
+            dot.className = 'select-none absolute w-6 h-6 -ml-3 -mt-3 rounded-full bg-red-500 border-2 border-red-300 z-20 flex justify-center items-center text-[10px] text-white font-bold pointer-events-none';
         }
     });
 }

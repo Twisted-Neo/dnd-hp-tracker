@@ -12,6 +12,120 @@ body {
     backdrop-filter: blur(8px);
 }
 
+/* Component Classes */
+
+/* Form Input & Textarea */
+.form-input,
+.form-textarea {
+    width: 100%;
+    background-color: #020617;
+    border: 1px solid #1e293b;
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    color: #ffffff;
+    font-size: 0.875rem;
+    outline: none;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-input:focus,
+.form-textarea:focus {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 1px #ef4444;
+}
+
+.form-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.375rem;
+}
+
+/* Buttons */
+.btn-primary {
+    width: 100%;
+    background-image: linear-gradient(to right, #dc2626, #b91c1c);
+    color: #ffffff;
+    font-weight: 700;
+    padding: 0.875rem 1rem;
+    border-radius: 0.75rem;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 10px 15px -3px rgba(69, 10, 10, 0.5);
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-image: linear-gradient(to right, #ef4444, #dc2626);
+}
+
+.btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-image: none;
+    background-color: #1e293b;
+    color: #64748b;
+    box-shadow: none;
+}
+
+.btn-secondary {
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    background-color: #1e293b;
+    color: #cbd5e1;
+    font-weight: 600;
+    font-size: 0.875rem;
+    transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
+}
+
+.btn-secondary:hover {
+    background-color: #334155;
+    color: #ffffff;
+}
+
+/* Cards & Modals */
+.card-panel {
+    background-color: rgba(15, 23, 42, 0.9);
+    border: 1px solid #1e293b;
+    border-radius: 1rem;
+    padding: 1rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+}
+
+.modal-card {
+    background-color: #0f172a;
+    width: 100%;
+    max-width: 28rem;
+    border-top-left-radius: 1.5rem;
+    border-top-right-radius: 1.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    border: 1px solid #1e293b;
+    position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+@media (min-width: 640px) {
+    .modal-card {
+        border-radius: 1rem;
+    }
+}
+
+.modal-close-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    color: #94a3b8;
+    padding: 0.5rem;
+    transition: color 0.15s ease-in-out;
+}
+
+.modal-close-btn:hover {
+    color: #ffffff;
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
     width: 4px;
@@ -41,13 +155,13 @@ input[type="color"]::-webkit-color-swatch {
 
 /* Spell Circle specific */
 #spell-canvas-container {
-    touch-action: none; /* Prevents pull-to-refresh and page scroll while drawing */
+    touch-action: none;
 }
 
 .circle-number {
-  user-select: none;
-  -webkit-user-select: none;
-  pointer-events: none;
+    user-select: none;
+    -webkit-user-select: none;
+    pointer-events: none;
 }
 
 /* Safe area padding for bottom nav on mobile */
