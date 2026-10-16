@@ -12,9 +12,6 @@ body {
     backdrop-filter: blur(8px);
 }
 
-/* Component Classes */
-
-/* Form Input & Textarea */
 .form-input,
 .form-textarea {
     width: 100%;
@@ -44,7 +41,6 @@ body {
     margin-bottom: 0.375rem;
 }
 
-/* Buttons */
 .btn-primary {
     width: 100%;
     background-image: linear-gradient(to right, #dc2626, #b91c1c);
@@ -84,7 +80,6 @@ body {
     color: #ffffff;
 }
 
-/* Cards & Modals */
 .card-panel {
     background-color: rgba(15, 23, 42, 0.9);
     border: 1px solid #1e293b;
@@ -126,7 +121,6 @@ body {
     color: #ffffff;
 }
 
-/* Custom Scrollbar */
 ::-webkit-scrollbar {
     width: 4px;
 }
@@ -138,7 +132,6 @@ body {
     border-radius: 4px;
 }
 
-/* Custom Color Picker */
 input[type="color"] {
     -webkit-appearance: none;
     border: none;
@@ -153,7 +146,6 @@ input[type="color"]::-webkit-color-swatch {
     border-radius: 0.75rem;
 }
 
-/* Spell Circle specific */
 #spell-canvas-container {
     touch-action: none;
 }
@@ -164,7 +156,6 @@ input[type="color"]::-webkit-color-swatch {
     pointer-events: none;
 }
 
-/* Safe area padding for bottom nav on mobile */
 .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);
 }

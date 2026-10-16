@@ -29,6 +29,42 @@ const PROPERTY_ICONS = [
     { icon: 'fa-heart-pulse', label: 'Vitality' }
 ];
 
+const ITEM_TEMPLATE = [
+    {
+        "name": "Magic Shield",
+        "currentHp": 15,
+        "maxHp": 20,
+        "color": "#3b82f6",
+        "properties": [
+            {
+                "icon": "fa-shield-halved",
+                "name": "Defense",
+                "description": "Provides +2 AC against ranged attacks."
+            }
+        ]
+    },
+    {
+        "name": "Familiar",
+        "currentHp": 8,
+        "maxHp": 8,
+        "color": "#10b981",
+        "properties": []
+    }
+];
+
+const SPELL_TEMPLATE = [
+    {
+        "name": "Fireball",
+        "description": "A bright streak flashes from your pointing finger.",
+        "sequence": [0, 4, 8]
+    },
+    {
+        "name": "Magic Missile",
+        "description": "You create three glowing darts of magical force.",
+        "sequence": [1, 2, 5]
+    }
+];
+
 // App State
 let db = null;
 let auth = null;
@@ -41,6 +77,8 @@ let editingItemId = null;
 let useLocalStorage = false;
 let authMode = 'login'; 
 let tempProperties = [];
+let currentImportType = 'items';
+let draggedItemId = null;
 
 // DOM Elements
 const syncStatus = document.getElementById('sync-status');
@@ -48,6 +86,8 @@ const errorToast = document.getElementById('error-toast');
 const errorMessage = document.getElementById('error-message');
 const authBanner = document.getElementById('auth-banner');
 const fabAdd = document.getElementById('fab-add');
+const fabImport = document.getElementById('fab-import');
+const btnImportSpells = document.getElementById('btn-import-spells');
 
 // Navigation
 const viewItemHp = document.getElementById('view-itemhp');
@@ -71,7 +111,8 @@ const itemForm = document.getElementById('item-form');
 const authModal = document.getElementById('auth-modal');
 const propertyModal = document.getElementById('property-modal');
 const amountModal = document.getElementById('amount-modal');
-// Auth forms and Item inputs (Same as original)
+const importModal = document.getElementById('import-modal');
+
 const nameInput = document.getElementById('input-name');
 const currentHpInput = document.getElementById('input-current-hp');
 const maxHpInput = document.getElementById('input-max-hp');
@@ -114,6 +155,7 @@ function updateSyncStatus(state, message) {
 async function initApp() {
     initNavigation();
     initSpellCircle();
+    initImportListeners();
     
     try {
         const app = initializeApp(firebaseConfig);
@@ -154,6 +196,7 @@ function initNavigation() {
         tabSpellCircle.classList.remove('text-red-400', 'border-red-500');
         
         fabAdd.classList.remove('hidden');
+        if (fabImport) fabImport.classList.remove('hidden');
     });
 
     tabSpellCircle.addEventListener('click', () => {
@@ -167,10 +210,195 @@ function initNavigation() {
         tabItemHp.classList.remove('text-red-400', 'border-red-500');
         
         fabAdd.classList.add('hidden');
+        if (fabImport) fabImport.classList.add('hidden');
         
-        // Recalculate canvas position when revealed
         canvasRect = spellCanvasContainer.getBoundingClientRect();
     });
+}
+
+// ---------------------------------------------
+// Import Logic
+// ---------------------------------------------
+function initImportListeners() {
+    if (fabImport) {
+        fabImport.addEventListener('click', () => openImportModal('items'));
+    }
+    if (btnImportSpells) {
+        btnImportSpells.addEventListener('click', () => openImportModal('spells'));
+    }
+
+    document.getElementById('import-modal-close').addEventListener('click', closeImportModal);
+    importModal.addEventListener('click', (e) => {
+        if (e.target === importModal) closeImportModal();
+    });
+
+    document.getElementById('btn-copy-template').addEventListener('click', () => {
+        const templateData = currentImportType === 'items' ? ITEM_TEMPLATE : SPELL_TEMPLATE;
+        navigator.clipboard.writeText(JSON.stringify(templateData, null, 2)).then(() => {
+            showError("Template copied to clipboard!");
+        }).catch(() => {
+            showError("Failed to copy template.");
+        });
+    });
+
+    document.getElementById('btn-confirm-import').addEventListener('click', confirmImport);
+}
+
+function openImportModal(type) {
+    currentImportType = type;
+    const titleEl = document.getElementById('import-modal-title');
+    const descEl = document.getElementById('import-modal-desc');
+    
+    if (type === 'items') {
+        titleEl.textContent = 'Import Items Data';
+        descEl.textContent = 'Paste your JSON code below to import items. You can also copy the template to see the correct format.';
+    } else {
+        titleEl.textContent = 'Import Spells Data';
+        descEl.textContent = 'Paste your JSON code below to import spell combinations. You can also copy the template to see the correct format.';
+    }
+    
+    document.getElementById('import-textarea').value = '';
+    document.querySelector('input[name="import-mode"][value="add"]').checked = true;
+    importModal.classList.remove('hidden');
+}
+
+function closeImportModal() {
+    importModal.classList.add('hidden');
+}
+
+async function confirmImport() {
+    const rawText = document.getElementById('import-textarea').value.trim();
+    const modeInput = document.querySelector('input[name="import-mode"]:checked');
+    const mode = modeInput ? modeInput.value : 'add';
+
+    if (!rawText) {
+        showError("Please paste JSON code to import.");
+        return;
+    }
+
+    let parsedData;
+    try {
+        parsedData = JSON.parse(rawText);
+    } catch (err) {
+        showError("Invalid JSON format. Check your syntax.");
+        return;
+    }
+
+    if (!Array.isArray(parsedData)) {
+        showError("Import data must be a JSON array of objects.");
+        return;
+    }
+
+    closeImportModal();
+
+    if (currentImportType === 'items') {
+        await processItemsImport(parsedData, mode);
+    } else {
+        await processSpellsImport(parsedData, mode);
+    }
+}
+
+async function processItemsImport(importedItems, mode) {
+    const validItems = importedItems.map((item, idx) => ({
+        name: (item.name || 'Unnamed Item').trim(),
+        maxHp: parseInt(item.maxHp) || 10,
+        currentHp: parseInt(item.currentHp) !== undefined && !isNaN(parseInt(item.currentHp)) ? parseInt(item.currentHp) : (parseInt(item.maxHp) || 10),
+        color: item.color || '#3b82f6',
+        order: items.length + idx,
+        properties: Array.isArray(item.properties) ? item.properties.map(p => ({
+            name: (p.name || '').trim(),
+            description: (p.description || '').trim(),
+            icon: p.icon || 'fa-wand-magic-sparkles'
+        })).filter(p => p.name.length > 0) : []
+    }));
+
+    if (useLocalStorage) {
+        if (mode === 'overwrite') {
+            items = validItems.map((item, idx) => ({ id: 'local_' + Date.now() + '_' + idx, ...item, order: idx }));
+        } else {
+            const newItems = validItems.map((item, idx) => ({ id: 'local_' + Date.now() + '_' + idx, ...item, order: items.length + idx }));
+            items = [...items, ...newItems];
+        }
+        saveToLocalStorage();
+        renderItems();
+        showError("Successfully imported items!");
+        return;
+    }
+
+    if (!currentUser) {
+        showError("Not signed in.");
+        return;
+    }
+
+    updateSyncStatus('saving', 'Importing...');
+    try {
+        const collectionRef = collection(db, 'users', currentUser.uid, 'dnd_items');
+        
+        if (mode === 'overwrite') {
+            const existingDocs = await getDocs(collectionRef);
+            const deletePromises = existingDocs.docs.map(docSnap => deleteDoc(doc(db, 'users', currentUser.uid, 'dnd_items', docSnap.id)));
+            await Promise.all(deletePromises);
+            items = [];
+        }
+
+        let currentOrder = items.length;
+        for (const item of validItems) {
+            item.order = currentOrder++;
+            item.createdAt = serverTimestamp();
+            await addDoc(collectionRef, item);
+        }
+        showError("Successfully imported items!");
+    } catch (error) {
+        console.error("Error importing items:", error);
+        showError("Failed to import items.");
+    }
+}
+
+async function processSpellsImport(importedSpells, mode) {
+    const validSpells = importedSpells.map(spell => ({
+        name: (spell.name || 'Unnamed Spell').trim(),
+        description: (spell.description || '').trim(),
+        sequence: Array.isArray(spell.sequence) ? spell.sequence : []
+    })).filter(s => s.sequence.length > 1);
+
+    if (useLocalStorage) {
+        if (mode === 'overwrite') {
+            spells = validSpells.map((spell, idx) => ({ id: 'local_spell_' + Date.now() + '_' + idx, ...spell }));
+        } else {
+            const newSpells = validSpells.map((spell, idx) => ({ id: 'local_spell_' + Date.now() + '_' + idx, ...spell }));
+            spells = [...spells, ...newSpells];
+        }
+        saveToLocalStorage();
+        renderSavedSpells();
+        showError("Successfully imported spells!");
+        return;
+    }
+
+    if (!currentUser) {
+        showError("Not signed in.");
+        return;
+    }
+
+    updateSyncStatus('saving', 'Importing...');
+    try {
+        const collectionRef = collection(db, 'users', currentUser.uid, 'dnd_spells');
+        
+        if (mode === 'overwrite') {
+            const existingDocs = await getDocs(collectionRef);
+            const deletePromises = existingDocs.docs.map(docSnap => deleteDoc(doc(db, 'users', currentUser.uid, 'dnd_spells', docSnap.id)));
+            await Promise.all(deletePromises);
+            spells = [];
+        }
+
+        for (const spell of validSpells) {
+            spell.createdAt = serverTimestamp();
+            await addDoc(collectionRef, spell);
+        }
+        showError("Successfully imported spells!");
+    } catch (error) {
+        console.error("Error importing spells:", error);
+        showError("Failed to import spells.");
+    }
 }
 
 // ---------------------------------------------
@@ -182,7 +410,6 @@ function initSpellCircle() {
     const radius = center - 24; 
     
     for (let i = 0; i < 12; i++) {
-        // Clock face layout (starts at top, goes clockwise)
         const angle = (i * 30 - 90) * (Math.PI / 180);
         const x = center + radius * Math.cos(angle);
         const y = center + radius * Math.sin(angle);
@@ -194,13 +421,11 @@ function initSpellCircle() {
         dot.style.left = `${x}px`;
         dot.style.top = `${y}px`;
         dot.id = `spell-dot-${i}`;
-        // Optional: display node number
         dot.textContent = i; 
         
         spellCanvasContainer.appendChild(dot);
     }
 
-    // Attach drawing events
     spellCanvasContainer.addEventListener('pointerdown', startDrawing);
     window.addEventListener('pointermove', drawLine);
     window.addEventListener('pointerup', endDrawing);
@@ -214,7 +439,6 @@ function getDotIndexFromEvent(e) {
     const x = e.clientX - canvasRect.left;
     const y = e.clientY - canvasRect.top;
     
-    // Find closest dot within a hit radius of 20px
     let closestIdx = -1;
     let minDist = 25; 
     
@@ -247,13 +471,11 @@ function drawLine(e) {
     if (!isDrawing) return;
     
     const idx = getDotIndexFromEvent(e);
-    // If we hit a new dot, add it to sequence
     if (idx !== -1 && currentSpellSequence[currentSpellSequence.length - 1] !== idx) {
         currentSpellSequence.push(idx);
         updateSaveButtonState();
     }
     
-    // Draw current active trace
     const x = e.clientX - canvasRect.left;
     const y = e.clientY - canvasRect.top;
     renderActivePattern(x, y);
@@ -284,38 +506,36 @@ function updateSaveButtonState() {
 function renderActivePattern(tempX = null, tempY = null) {
     spellLines.innerHTML = '';
     
-    // Reset all dots
     for (let i = 0; i < 12; i++) {
         const dot = document.getElementById(`spell-dot-${i}`);
-        dot.className = 'select-none absolute w-6 h-6 -ml-3 -mt-3 rounded-full bg-slate-800 border-2 border-slate-600 z-20 flex justify-center items-center text-[10px] text-slate-500 font-bold pointer-events-none transition-colors';
+        if (dot) {
+            dot.className = 'select-none absolute w-6 h-6 -ml-3 -mt-3 rounded-full bg-slate-800 border-2 border-slate-600 z-20 flex justify-center items-center text-[10px] text-slate-500 font-bold pointer-events-none transition-colors';
+        }
     }
 
     if (currentSpellSequence.length === 0) return;
 
-    // Draw fixed lines
     for (let i = 0; i < currentSpellSequence.length - 1; i++) {
         const p1 = dotCoords[currentSpellSequence[i]];
         const p2 = dotCoords[currentSpellSequence[i+1]];
         createSvgLine(spellLines, p1.x, p1.y, p2.x, p2.y, '#ef4444');
     }
 
-    // Draw moving line
     if (isDrawing && tempX !== null && tempY !== null) {
         const lastPt = dotCoords[currentSpellSequence[currentSpellSequence.length - 1]];
-        
-        // Ensure bounds to not draw wildly outside the circle
         const boundedX = Math.max(0, Math.min(260, tempX));
         const boundedY = Math.max(0, Math.min(260, tempY));
         createSvgLine(spellLines, lastPt.x, lastPt.y, boundedX, boundedY, '#f87171', '0.6');
     }
 
-    // Highlight sequence dots
     currentSpellSequence.forEach((idx, order) => {
         const dot = document.getElementById(`spell-dot-${idx}`);
-        if (order === 0) {
-            dot.className = 'select-none absolute w-6 h-6 -ml-3 -mt-3 rounded-full bg-red-600 border-2 border-white z-20 flex justify-center items-center text-[10px] text-white font-bold pointer-events-none';
-        } else {
-            dot.className = 'select-none absolute w-6 h-6 -ml-3 -mt-3 rounded-full bg-red-500 border-2 border-red-300 z-20 flex justify-center items-center text-[10px] text-white font-bold pointer-events-none';
+        if (dot) {
+            if (order === 0) {
+                dot.className = 'select-none absolute w-6 h-6 -ml-3 -mt-3 rounded-full bg-red-600 border-2 border-white z-20 flex justify-center items-center text-[10px] text-white font-bold pointer-events-none';
+            } else {
+                dot.className = 'select-none absolute w-6 h-6 -ml-3 -mt-3 rounded-full bg-red-500 border-2 border-red-300 z-20 flex justify-center items-center text-[10px] text-white font-bold pointer-events-none';
+            }
         }
     });
 }
@@ -340,21 +560,12 @@ function enableLocalStorageMode(statusText) {
     useLocalStorage = true;
     updateSyncStatus('local', statusText);
 
-    // Load Items
     const localItems = localStorage.getItem('dnd_hp_items');
-    if (localItems) {
-        items = JSON.parse(localItems);
-    } else {
-        items = [];
-    }
+    items = localItems ? JSON.parse(localItems) : [];
+    items.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
-    // Load Spells
     const localSpells = localStorage.getItem('dnd_hp_spells');
-    if (localSpells) {
-        spells = JSON.parse(localSpells);
-    } else {
-        spells = [];
-    }
+    spells = localSpells ? JSON.parse(localSpells) : [];
     
     renderItems();
     renderSavedSpells();
@@ -368,12 +579,15 @@ function saveToLocalStorage() {
 function loadFirestoreData() {
     if (!currentUser) return;
 
-    // Listen to Items
     const itemsCollectionRef = collection(db, 'users', currentUser.uid, 'dnd_items');
     unsubscribeItems = onSnapshot(itemsCollectionRef, (snapshot) => {
         items = [];
         snapshot.forEach((docSnap) => items.push({ id: docSnap.id, ...docSnap.data() }));
-        items.sort((a, b) => (a.createdAt?.toMillis() || 0) - (b.createdAt?.toMillis() || 0));
+        items.sort((a, b) => {
+            const orderA = a.order !== undefined ? a.order : (a.createdAt?.toMillis() || 0);
+            const orderB = b.order !== undefined ? b.order : (b.createdAt?.toMillis() || 0);
+            return orderA - orderB;
+        });
         renderItems();
         updateSyncStatus('connected', 'Synced');
     }, (error) => {
@@ -381,7 +595,6 @@ function loadFirestoreData() {
         enableLocalStorageMode("Sync Failed");
     });
 
-    // Listen to Spells
     const spellsCollectionRef = collection(db, 'users', currentUser.uid, 'dnd_spells');
     unsubscribeSpells = onSnapshot(spellsCollectionRef, (snapshot) => {
         spells = [];
@@ -389,6 +602,25 @@ function loadFirestoreData() {
         spells.sort((a, b) => (a.createdAt?.toMillis() || 0) - (b.createdAt?.toMillis() || 0));
         renderSavedSpells();
     });
+}
+
+async function saveOrderToStorage() {
+    if (useLocalStorage) {
+        saveToLocalStorage();
+        return;
+    }
+    if (!currentUser) return;
+    updateSyncStatus('saving', 'Saving order...');
+    try {
+        const updatePromises = items.map((item, idx) => 
+            updateDoc(doc(db, 'users', currentUser.uid, 'dnd_items', item.id), { order: idx })
+        );
+        await Promise.all(updatePromises);
+        updateSyncStatus('connected', 'Synced');
+    } catch (error) {
+        console.error("Failed to save order:", error);
+        showError("Failed to save item order.");
+    }
 }
 
 // ---------------------------------------------
@@ -468,13 +700,11 @@ function renderSavedSpells() {
         const card = document.createElement('div');
         card.className = "bg-slate-900/90 rounded-2xl p-4 border border-slate-800 flex gap-4 items-start relative overflow-hidden";
         
-        // Mini SVG generation for visual preview
         const miniSvgSize = 60;
         const miniCenter = miniSvgSize / 2;
         const miniRadius = miniCenter - 8;
         let miniSvgContent = '';
         
-        // Compute static dots
         const miniCoords = [];
         for (let i = 0; i < 12; i++) {
             const angle = (i * 30 - 90) * (Math.PI / 180);
@@ -485,7 +715,6 @@ function renderSavedSpells() {
             miniSvgContent += `<circle cx="${miniCoords[i].x}" cy="${miniCoords[i].y}" r="1.5" fill="#475569" />`;
         }
         
-        // Draw saved lines
         for (let i = 0; i < spell.sequence.length - 1; i++) {
             const p1 = miniCoords[spell.sequence[i]];
             const p2 = miniCoords[spell.sequence[i+1]];
@@ -517,7 +746,7 @@ function renderSavedSpells() {
 }
 
 // ---------------------------------------------
-// Existing ItemHP Logic (Slightly adjusted for tab visibility)
+// ItemHP Logic
 // ---------------------------------------------
 const container = document.getElementById('items-container');
 
@@ -551,6 +780,27 @@ function renderItems() {
 
         const card = document.createElement('div');
         card.className = "bg-slate-900/90 rounded-2xl overflow-hidden shadow-lg border border-slate-800 flex items-stretch transition-all hover:border-slate-700";
+        card.dataset.id = item.id;
+        card.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+        card.addEventListener('drop', (e) => {
+            e.preventDefault();
+            if (!draggedItemId || draggedItemId === item.id) return;
+
+            const draggedIdx = items.findIndex(i => i.id === draggedItemId);
+            const targetIdx = items.findIndex(i => i.id === item.id);
+
+            if (draggedIdx !== -1 && targetIdx !== -1) {
+                const [movedItem] = items.splice(draggedIdx, 1);
+                items.splice(targetIdx, 0, movedItem);
+                
+                items.forEach((it, idx) => { it.order = idx; });
+                renderItems();
+                saveOrderToStorage();
+            }
+            draggedItemId = null;
+        });
         
         let propertiesHtml = '';
         if (props.length > 0) {
@@ -567,7 +817,9 @@ function renderItems() {
         }
 
         card.innerHTML = `
-            <div class="w-2.5 shrink-0" style="background-color: ${item.color || '#3b82f6'}"></div>
+            <div class="w-3 shrink-0 cursor-grab active:cursor-grabbing flex items-center justify-center text-white/30 hover:text-white/70 transition-colors" style="background-color: ${item.color || '#3b82f6'}" draggable="true" title="Drag to reorder">
+                <i class="fas fa-grip-vertical text-[10px]"></i>
+            </div>
             <div class="p-3.5 flex-1 flex flex-col justify-center min-w-0">
                 <div class="flex justify-between items-start mb-1.5">
                     <h3 class="font-bold text-slate-100 leading-tight truncate pr-2 text-base">${item.name}</h3>
@@ -601,6 +853,12 @@ function renderItems() {
             </div>
         `;
 
+        const handleEl = card.querySelector('[draggable="true"]');
+        handleEl.addEventListener('dragstart', (e) => {
+            draggedItemId = item.id;
+            e.dataTransfer.effectAllowed = 'move';
+        });
+
         card.querySelector('.edit-btn').addEventListener('click', (e) => { e.stopPropagation(); openItemModal(item); });
         card.querySelector('.delete-btn').addEventListener('click', (e) => { e.stopPropagation(); deleteItem(item.id); });
         card.querySelectorAll('.prop-badge').forEach(btn => {
@@ -624,7 +882,6 @@ function showPropertyPopup(prop) {
     propertyModal.classList.remove('hidden');
 }
 
-// ... All existing event handlers for item Modals, Amounts, Auth remain completely structurally unchanged ...
 let pendingAction = { itemId: null, type: null };
 const amountInput = document.getElementById('amount-input');
 const amountTitle = document.getElementById('amount-modal-title');
@@ -643,7 +900,6 @@ function attachPressEvents(element, itemId, actionType) {
     };
     const cancel = () => clearTimeout(pressTimer);
     const end = (e) => {
-        if (e.cancelable && e.type === 'touchend') e.preventDefault();
         clearTimeout(pressTimer);
         if (!isLongPress) updateHp(itemId, actionType === 'heal' ? 1 : -1);
     };
@@ -673,12 +929,14 @@ async function updateHp(itemId, change) {
 
 async function deleteItem(itemId) {
     items = items.filter(i => i.id !== itemId);
+    items.forEach((it, idx) => { it.order = idx; });
     renderItems();
     if (useLocalStorage) { saveToLocalStorage(); return; }
     if (!currentUser) return;
     updateSyncStatus('saving', 'Deleting...');
     try {
         await deleteDoc(doc(db, 'users', currentUser.uid, 'dnd_items', itemId));
+        saveOrderToStorage();
     } catch (error) { showError("Failed to delete item."); }
 }
 
@@ -753,6 +1011,7 @@ async function saveItem(e) {
             const index = items.findIndex(i => i.id === editingItemId);
             if (index !== -1) items[index] = { ...items[index], ...itemData };
         } else {
+            itemData.order = items.length;
             items.push({ id: 'local_' + Date.now(), ...itemData });
         }
         saveToLocalStorage();
@@ -766,13 +1025,14 @@ async function saveItem(e) {
         if (editingItemId) {
             await updateDoc(doc(db, 'users', currentUser.uid, 'dnd_items', editingItemId), itemData);
         } else {
+            itemData.order = items.length;
             itemData.createdAt = serverTimestamp();
             await addDoc(collection(db, 'users', currentUser.uid, 'dnd_items'), itemData);
         }
     } catch (error) { showError("Failed to save item."); }
 }
 
-// Ensure all standard Auth and UI Event Listeners from the original file are connected
+// Event Listeners for UI & Auth
 document.getElementById('modal-close').addEventListener('click', closeItemModal);
 itemForm.addEventListener('submit', saveItem);
 document.getElementById('btn-add-property').addEventListener('click', () => { tempProperties.push({ name: '', description: '', icon: 'fa-wand-magic-sparkles' }); renderPropertyEditors(); });
@@ -788,14 +1048,17 @@ const authSubmitBtn = document.getElementById('auth-submit-btn');
 
 userMenuBtn.addEventListener('click', () => {
     if (currentUser) {
-        authUserInfo.classList.remove('hidden'); authFormContainer.classList.add('hidden');
+        authUserInfo.classList.remove('hidden'); 
+        authFormContainer.classList.add('hidden');
         document.getElementById('user-email-display').textContent = currentUser.email || 'Anonymous Adventurer';
     } else {
-        authUserInfo.classList.add('hidden'); authFormContainer.classList.remove('hidden');
+        authUserInfo.classList.add('hidden'); 
+        authFormContainer.classList.remove('hidden');
     }
     authModal.classList.remove('hidden');
 });
 authModalClose.addEventListener('click', () => authModal.classList.add('hidden'));
+
 const bannerLoginBtn = document.getElementById('banner-login-btn');
 if (bannerLoginBtn) bannerLoginBtn.addEventListener('click', () => userMenuBtn.click());
 
@@ -824,18 +1087,70 @@ document.getElementById('auth-form').addEventListener('submit', async (e) => {
 });
 
 document.getElementById('btn-logout').addEventListener('click', async () => {
-    await signOut(auth); authModal.classList.add('hidden');
+    await signOut(auth); 
+    authModal.classList.add('hidden');
 });
+
+// Account Management Handlers
+const updateEmailForm = document.getElementById('form-update-email');
+if (updateEmailForm) {
+    updateEmailForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const newEmail = document.getElementById('input-update-email').value.trim();
+        if (!currentUser || !newEmail) return;
+        try {
+            await updateEmail(currentUser, newEmail);
+            showError("Email updated successfully.");
+            document.getElementById('input-update-email').value = '';
+            document.getElementById('user-email-display').textContent = currentUser.email;
+        } catch (err) {
+            showError(err.message.replace("Firebase: ", ""));
+        }
+    });
+}
+
+const updatePasswordForm = document.getElementById('form-update-password');
+if (updatePasswordForm) {
+    updatePasswordForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const newPassword = document.getElementById('input-update-password').value;
+        if (!currentUser || !newPassword) return;
+        try {
+            await updatePassword(currentUser, newPassword);
+            showError("Password updated successfully.");
+            document.getElementById('input-update-password').value = '';
+        } catch (err) {
+            showError(err.message.replace("Firebase: ", ""));
+        }
+    });
+}
+
+const btnDeleteAccount = document.getElementById('btn-delete-account');
+if (btnDeleteAccount) {
+    btnDeleteAccount.addEventListener('click', async () => {
+        if (!currentUser) return;
+        if (confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+            try {
+                await deleteUser(currentUser);
+                authModal.classList.add('hidden');
+            } catch (err) {
+                showError(err.message.replace("Firebase: ", ""));
+            }
+        }
+    });
+}
 
 function openAmountModal(itemId, type) {
     pendingAction = { itemId, type };
     amountTitle.textContent = type === 'heal' ? 'Heal Amount' : 'Damage Amount';
-    amountInput.value = ''; amountModal.classList.remove('hidden');
+    amountInput.value = ''; 
+    amountModal.classList.remove('hidden');
     setTimeout(() => amountInput.focus(), 50);
 }
 
 function closeAmountModal() {
-    amountModal.classList.add('hidden'); pendingAction = { itemId: null, type: null };
+    amountModal.classList.add('hidden'); 
+    pendingAction = { itemId: null, type: null };
 }
 
 function confirmAmount() {

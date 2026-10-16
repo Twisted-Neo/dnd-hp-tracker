@@ -66,7 +66,6 @@
                 <!-- Drawing Canvas -->
                 <div id="spell-canvas-container" class="relative w-[260px] h-[260px] my-2 bg-slate-950 rounded-full border border-slate-800 shadow-inner">
                     <svg id="spell-lines" class="absolute inset-0 w-full h-full pointer-events-none z-10"></svg>
-                    <!-- Dots will be injected here via JS -->
                 </div>
 
                 <button id="btn-clear-spell" class="btn-secondary text-xs font-bold py-1 px-3 border border-slate-800 hover:border-slate-600 mt-3">
@@ -88,10 +87,13 @@
 
             <!-- Saved Combinations List -->
             <div>
-                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-3 px-1">Saved Spells</h3>
-                <div id="saved-spells-container" class="flex flex-col gap-3">
-                    <!-- Spells injected here -->
+                <div class="flex justify-between items-center mb-3 px-1">
+                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest">Saved Spells</h3>
+                    <button id="btn-import-spells" class="text-xs text-red-400 hover:text-red-300 font-bold flex items-center gap-1.5">
+                        <i class="fas fa-file-import"></i> Import Spells
+                    </button>
                 </div>
+                <div id="saved-spells-container" class="flex flex-col gap-3"></div>
             </div>
         </div>
     </main>
@@ -110,10 +112,56 @@
         </div>
     </nav>
 
-    <!-- Floating Action Button -->
-    <button id="fab-add" class="fixed bottom-20 right-6 lg:right-auto lg:left-1/2 lg:ml-[150px] w-14 h-14 bg-gradient-to-tr from-red-700 to-red-500 hover:from-red-600 hover:to-red-400 text-white rounded-2xl shadow-xl shadow-red-950/80 flex justify-center items-center text-2xl transition-all duration-200 active:scale-95 z-40 border border-red-400/30">
-        <i class="fas fa-plus"></i>
-    </button>
+    <!-- Floating Action Buttons Container (Import & Add) -->
+    <div class="fixed bottom-20 right-6 lg:right-auto lg:left-1/2 lg:ml-[110px] flex items-center gap-3 z-40">
+        <button id="fab-import" class="w-14 h-14 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white rounded-2xl shadow-xl shadow-slate-950/80 flex justify-center items-center text-xl transition-all duration-200 active:scale-95 border border-slate-700" title="Import Items">
+            <i class="fas fa-file-import"></i>
+        </button>
+        <button id="fab-add" class="w-14 h-14 bg-gradient-to-tr from-red-700 to-red-500 hover:from-red-600 hover:to-red-400 text-white rounded-2xl shadow-xl shadow-red-950/80 flex justify-center items-center text-2xl transition-all duration-200 active:scale-95 border border-red-400/30" title="Add Item">
+            <i class="fas fa-plus"></i>
+        </button>
+    </div>
+
+    <!-- Import Modal -->
+    <div id="import-modal" class="fixed inset-0 modal-overlay z-[60] hidden flex flex-col justify-end sm:justify-center items-center p-0 sm:p-4">
+        <div class="modal-card">
+            <button id="import-modal-close" class="modal-close-btn">
+                <i class="fas fa-xmark text-lg"></i>
+            </button>
+            <h2 class="text-lg font-bold text-white mb-2" id="import-modal-title">Import Data</h2>
+            <p id="import-modal-desc" class="text-xs text-slate-400 mb-4 leading-relaxed">Paste your JSON code below to import items. You can also copy the template to see the required format.</p>
+            
+            <div class="flex flex-col gap-4">
+                <div class="flex justify-between items-center">
+                    <button type="button" id="btn-copy-template" class="btn-secondary text-xs py-2 px-3 border border-slate-800 flex items-center gap-1.5">
+                        <i class="fas fa-copy"></i> Copy Template
+                    </button>
+                </div>
+                
+                <div>
+                    <textarea id="import-textarea" required placeholder="Paste JSON code here..." class="form-textarea resize-none h-36 font-mono text-xs"></textarea>
+                </div>
+
+                <div>
+                    <label class="form-label">Import Mode</label>
+                    <div class="grid grid-cols-2 gap-2 mt-1">
+                        <label class="flex items-center gap-2 bg-slate-950 p-2.5 rounded-xl border border-slate-800 cursor-pointer hover:border-slate-700 text-xs text-slate-300 font-semibold">
+                            <input type="radio" name="import-mode" value="add" checked class="accent-red-500">
+                            <span>Add / Append</span>
+                        </label>
+                        <label class="flex items-center gap-2 bg-slate-950 p-2.5 rounded-xl border border-slate-800 cursor-pointer hover:border-slate-700 text-xs text-slate-300 font-semibold">
+                            <input type="radio" name="import-mode" value="overwrite" class="accent-red-500">
+                            <span>Overwrite All</span>
+                        </label>
+                    </div>
+                </div>
+
+                <button type="button" id="btn-confirm-import" class="btn-primary mt-2">
+                    Import Data
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Authentication Modal -->
     <div id="auth-modal" class="fixed inset-0 modal-overlay z-[60] hidden flex flex-col justify-end sm:justify-center items-center p-0 sm:p-4">
