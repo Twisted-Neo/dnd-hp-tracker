@@ -143,6 +143,7 @@ body {
 }
 
 input[type="color"] {
+    appearance: none;
     -webkit-appearance: none;
     border: none;
     padding: 0;
