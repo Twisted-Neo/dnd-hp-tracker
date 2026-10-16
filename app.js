@@ -5,7 +5,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { 
     getFirestore, collection, addDoc, updateDoc, deleteDoc, 
-    doc, getDocs, onSnapshot, serverTimestamp 
+    doc, getDocs, onSnapshot, serverTimestamp, writeBatch 
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -141,7 +141,7 @@ function updateSyncStatus(state, message) {
     if (!syncStatus) return;
     if (state === 'connected') {
         syncStatus.className = "flex items-center text-xs text-emerald-400 bg-slate-800/90 px-2.5 py-1 rounded-full border border-slate-700 font-medium";
-        syncStatus.innerHTML = `<i class="fas fa-cloud-check mr-1.5"></i> ${message || 'Synced'}`;
+        syncStatus.innerHTML = `<i class="fas fa-circle-check mr-1.5"></i> ${message || 'Synced'}`;
     } else if (state === 'saving') {
         syncStatus.className = "flex items-center text-xs text-amber-400 bg-slate-800/90 px-2.5 py-1 rounded-full border border-slate-700 font-medium";
         syncStatus.innerHTML = `<i class="fas fa-sync fa-spin mr-1.5"></i> ${message || 'Saving...'}`;
@@ -302,7 +302,7 @@ async function processItemsImport(importedItems, mode) {
     const validItems = importedItems.map((item, idx) => ({
         name: (item.name || 'Unnamed Item').trim(),
         maxHp: parseInt(item.maxHp) || 10,
-        currentHp: parseInt(item.currentHp) !== undefined && !isNaN(parseInt(item.currentHp)) ? parseInt(item.currentHp) : (parseInt(item.maxHp) || 10),
+        currentHp: !isNaN(parseInt(item.currentHp)) ? parseInt(item.currentHp) : (parseInt(item.maxHp) || 10),
         color: item.color || '#3b82f6',
         order: items.length + idx,
         properties: Array.isArray(item.properties) ? item.properties.map(p => ({
@@ -355,11 +355,28 @@ async function processItemsImport(importedItems, mode) {
 }
 
 async function processSpellsImport(importedSpells, mode) {
-    const validSpells = importedSpells.map(spell => ({
-        name: (spell.name || 'Unnamed Spell').trim(),
-        description: (spell.description || '').trim(),
-        sequence: Array.isArray(spell.sequence) ? spell.sequence : []
-    })).filter(s => s.sequence.length > 1);
+    const validSpells = [];
+    let skippedCount = 0;
+
+    importedSpells.forEach(spell => {
+        const name = (spell.name || 'Unnamed Spell').trim();
+        const description = (spell.description || '').trim();
+        const sequence = Array.isArray(spell.sequence) ? spell.sequence : [];
+        if (sequence.length > 1) {
+            validSpells.push({ name, description, sequence });
+        } else {
+            skippedCount++;
+        }
+    });
+
+    if (skippedCount > 0) {
+        showError(`Notice: ${skippedCount} spell(s) skipped due to insufficient sequence nodes.`);
+    }
+
+    if (validSpells.length === 0) {
+        showError("No valid spells found to import.");
+        return;
+    }
 
     if (useLocalStorage) {
         if (mode === 'overwrite') {
@@ -435,7 +452,7 @@ function initSpellCircle() {
 }
 
 function getDotIndexFromEvent(e) {
-    if (!canvasRect) canvasRect = spellCanvasContainer.getBoundingClientRect();
+    canvasRect = spellCanvasContainer.getBoundingClientRect();
     const x = e.clientX - canvasRect.left;
     const y = e.clientY - canvasRect.top;
     
@@ -612,10 +629,12 @@ async function saveOrderToStorage() {
     if (!currentUser) return;
     updateSyncStatus('saving', 'Saving order...');
     try {
-        const updatePromises = items.map((item, idx) => 
-            updateDoc(doc(db, 'users', currentUser.uid, 'dnd_items', item.id), { order: idx })
-        );
-        await Promise.all(updatePromises);
+        const batch = writeBatch(db);
+        items.forEach((item, idx) => {
+            const docRef = doc(db, 'users', currentUser.uid, 'dnd_items', item.id);
+            batch.update(docRef, { order: idx });
+        });
+        await batch.commit();
         updateSyncStatus('connected', 'Synced');
     } catch (error) {
         console.error("Failed to save order:", error);
@@ -729,7 +748,7 @@ function renderSavedSpells() {
                 <h4 class="font-bold text-slate-100 text-sm truncate">${spell.name}</h4>
                 <p class="text-xs text-slate-400 mt-1 leading-relaxed">${spell.description}</p>
                 <div class="mt-2 text-[10px] font-mono text-slate-500 bg-slate-950 inline-block px-2 py-0.5 rounded border border-slate-800">
-                    Trace: ${spell.sequence.join(' → ')}
+                    Trace: ${spell.sequence.join(' -> ')}
                 </div>
             </div>
             <button class="delete-spell-btn absolute top-3 right-3 text-slate-500 hover:text-red-400 transition-colors p-1" data-id="${spell.id}">
