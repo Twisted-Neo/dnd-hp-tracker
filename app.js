@@ -220,6 +220,9 @@ function initNavigation() {
 // Import Logic
 // ---------------------------------------------
 function initImportListeners() {
+    if (fabAdd) {
+        fabAdd.addEventListener('click', () => openItemModal());
+    }
     if (fabImport) {
         fabImport.addEventListener('click', () => openImportModal('items'));
     }
