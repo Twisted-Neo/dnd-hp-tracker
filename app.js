@@ -779,13 +779,41 @@ function renderItems() {
         const props = Array.isArray(item.properties) ? item.properties : [];
 
         const card = document.createElement('div');
-        card.className = "bg-slate-900/90 rounded-2xl overflow-hidden shadow-lg border border-slate-800 flex items-stretch transition-all hover:border-slate-700";
+        card.className = "item-card bg-slate-900/90 rounded-2xl overflow-hidden shadow-lg border border-slate-800 flex items-stretch transition-all hover:border-slate-700";
         card.dataset.id = item.id;
+        card.draggable = true;
+
+        card.addEventListener('dragstart', (e) => {
+            draggedItemId = item.id;
+            e.dataTransfer.effectAllowed = 'move';
+            setTimeout(() => card.classList.add('dragging'), 0);
+        });
+
+        card.addEventListener('dragend', () => {
+            card.classList.remove('dragging');
+            document.querySelectorAll('.item-card').forEach(c => c.classList.remove('drag-over'));
+            draggedItemId = null;
+        });
+
         card.addEventListener('dragover', (e) => {
             e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
         });
+
+        card.addEventListener('dragenter', (e) => {
+            e.preventDefault();
+            if (draggedItemId && draggedItemId !== item.id) {
+                card.classList.add('drag-over');
+            }
+        });
+
+        card.addEventListener('dragleave', () => {
+            card.classList.remove('drag-over');
+        });
+
         card.addEventListener('drop', (e) => {
             e.preventDefault();
+            card.classList.remove('drag-over');
             if (!draggedItemId || draggedItemId === item.id) return;
 
             const draggedIdx = items.findIndex(i => i.id === draggedItemId);
@@ -799,7 +827,6 @@ function renderItems() {
                 renderItems();
                 saveOrderToStorage();
             }
-            draggedItemId = null;
         });
         
         let propertiesHtml = '';
@@ -817,7 +844,7 @@ function renderItems() {
         }
 
         card.innerHTML = `
-            <div class="w-3 shrink-0 cursor-grab active:cursor-grabbing flex items-center justify-center text-white/30 hover:text-white/70 transition-colors" style="background-color: ${item.color || '#3b82f6'}" draggable="true" title="Drag to reorder">
+            <div class="w-3 shrink-0 cursor-grab active:cursor-grabbing flex items-center justify-center text-white/30 hover:text-white/70 transition-colors" style="background-color: ${item.color || '#3b82f6'}" title="Drag to reorder">
                 <i class="fas fa-grip-vertical text-[10px]"></i>
             </div>
             <div class="p-3.5 flex-1 flex flex-col justify-center min-w-0">
@@ -852,12 +879,6 @@ function renderItems() {
                 </button>
             </div>
         `;
-
-        const handleEl = card.querySelector('[draggable="true"]');
-        handleEl.addEventListener('dragstart', (e) => {
-            draggedItemId = item.id;
-            e.dataTransfer.effectAllowed = 'move';
-        });
 
         card.querySelector('.edit-btn').addEventListener('click', (e) => { e.stopPropagation(); openItemModal(item); });
         card.querySelector('.delete-btn').addEventListener('click', (e) => { e.stopPropagation(); deleteItem(item.id); });
@@ -1004,11 +1025,13 @@ async function saveItem(e) {
     })).filter(p => p.name.length > 0);
 
     const itemData = { name, maxHp, currentHp, color, properties: cleanedProperties };
+    
+    const idToEdit = editingItemId;
     closeItemModal();
 
     if (useLocalStorage) {
-        if (editingItemId) {
-            const index = items.findIndex(i => i.id === editingItemId);
+        if (idToEdit) {
+            const index = items.findIndex(i => i.id === idToEdit);
             if (index !== -1) items[index] = { ...items[index], ...itemData };
         } else {
             itemData.order = items.length;
@@ -1022,8 +1045,8 @@ async function saveItem(e) {
     if (!currentUser) { showError("Not signed in."); return; }
     updateSyncStatus('saving', 'Saving...');
     try {
-        if (editingItemId) {
-            await updateDoc(doc(db, 'users', currentUser.uid, 'dnd_items', editingItemId), itemData);
+        if (idToEdit) {
+            await updateDoc(doc(db, 'users', currentUser.uid, 'dnd_items', idToEdit), itemData);
         } else {
             itemData.order = items.length;
             itemData.createdAt = serverTimestamp();
