@@ -429,12 +429,11 @@ async function saveBodyPartData(desc, color) {
     closeBodyPartModal();
     renderBodies();
 
-    if (useLocalStorage) {
+    if (useLocalStorage || !currentUser) {
         saveToLocalStorage();
         return;
     }
 
-    if (!currentUser) return;
     updateSyncStatus('saving', 'Saving...');
     try {
         await updateDoc(doc(db, 'users', currentUser.uid, 'dnd_bodies', activeBodyId), {
