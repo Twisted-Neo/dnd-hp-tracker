@@ -71,8 +71,10 @@ let auth = null;
 let currentUser = null;
 let items = [];
 let spells = [];
+let bodies = [];
 let unsubscribeItems = null;
 let unsubscribeSpells = null;
+let unsubscribeBodies = null;
 let editingItemId = null;
 let useLocalStorage = false;
 let authMode = 'login'; 
@@ -80,20 +82,41 @@ let tempProperties = [];
 let currentImportType = 'items';
 let draggedItemId = null;
 
+// Body System State
+const BODY_PARTS = [
+    { id: 'head', label: 'Head' },
+    { id: 'l_arm', label: 'Left Arm' },
+    { id: 'r_arm', label: 'Right Arm' },
+    { id: 'torso', label: 'Torso' },
+    { id: 'l_leg', label: 'Left Leg' },
+    { id: 'r_leg', label: 'Right Leg' }
+];
+let activeBodyId = null;
+let activeBodyPartId = null;
+let selectedPartColor = '#10b981';
+
 // DOM Elements
 const syncStatus = document.getElementById('sync-status');
 const errorToast = document.getElementById('error-toast');
 const errorMessage = document.getElementById('error-message');
 const authBanner = document.getElementById('auth-banner');
+
+// FAB Containers
+const fabContainerItemHp = document.getElementById('fab-container-itemhp');
+const fabContainerBodies = document.getElementById('fab-container-bodies');
 const fabAdd = document.getElementById('fab-add');
 const fabImport = document.getElementById('fab-import');
+const fabAddBody = document.getElementById('fab-add-body');
+const btnAddBodyTop = document.getElementById('btn-add-body-top');
 const btnImportSpells = document.getElementById('btn-import-spells');
 
 // Navigation
 const viewItemHp = document.getElementById('view-itemhp');
 const viewSpellCircle = document.getElementById('view-spellcircle');
+const viewBodies = document.getElementById('view-bodies');
 const tabItemHp = document.getElementById('tab-itemhp');
 const tabSpellCircle = document.getElementById('tab-spellcircle');
+const tabBodies = document.getElementById('tab-bodies');
 
 // Spell Circle Elements
 const spellCanvasContainer = document.getElementById('spell-canvas-container');
@@ -112,6 +135,9 @@ const authModal = document.getElementById('auth-modal');
 const propertyModal = document.getElementById('property-modal');
 const amountModal = document.getElementById('amount-modal');
 const importModal = document.getElementById('import-modal');
+const bodyModal = document.getElementById('body-modal');
+const bodyForm = document.getElementById('body-form');
+const bodyPartModal = document.getElementById('body-part-modal');
 
 const nameInput = document.getElementById('input-name');
 const currentHpInput = document.getElementById('input-current-hp');
@@ -156,6 +182,7 @@ async function initApp() {
     initNavigation();
     initSpellCircle();
     initImportListeners();
+    initBodyListeners();
     
     try {
         const app = initializeApp(firebaseConfig);
@@ -167,12 +194,13 @@ async function initApp() {
                 currentUser = user;
                 useLocalStorage = false;
                 if (authBanner) authBanner.classList.add('hidden');
-                updateSyncStatus('connected', 'Connected');
+                updateSyncStatus('connected', 'Synced');
                 loadFirestoreData();
             } else {
                 currentUser = null;
                 if (unsubscribeItems) unsubscribeItems();
                 if (unsubscribeSpells) unsubscribeSpells();
+                if (unsubscribeBodies) unsubscribeBodies();
                 if (authBanner) authBanner.classList.remove('hidden');
                 enableLocalStorageMode("Guest Mode");
             }
@@ -188,31 +216,308 @@ function initNavigation() {
     tabItemHp.addEventListener('click', () => {
         viewItemHp.classList.remove('hidden');
         viewSpellCircle.classList.add('hidden');
+        viewBodies.classList.add('hidden');
         
         tabItemHp.classList.add('text-red-400', 'border-red-500');
         tabItemHp.classList.remove('text-slate-500', 'border-transparent');
         
         tabSpellCircle.classList.add('text-slate-500', 'border-transparent');
         tabSpellCircle.classList.remove('text-red-400', 'border-red-500');
+
+        tabBodies.classList.add('text-slate-500', 'border-transparent');
+        tabBodies.classList.remove('text-red-400', 'border-red-500');
         
-        fabAdd.classList.remove('hidden');
-        if (fabImport) fabImport.classList.remove('hidden');
+        fabContainerItemHp.classList.remove('hidden');
+        fabContainerBodies.classList.add('hidden');
     });
 
     tabSpellCircle.addEventListener('click', () => {
         viewSpellCircle.classList.remove('hidden');
         viewItemHp.classList.add('hidden');
+        viewBodies.classList.add('hidden');
         
         tabSpellCircle.classList.add('text-red-400', 'border-red-500');
         tabSpellCircle.classList.remove('text-slate-500', 'border-transparent');
         
         tabItemHp.classList.add('text-slate-500', 'border-transparent');
         tabItemHp.classList.remove('text-red-400', 'border-red-500');
+
+        tabBodies.classList.add('text-slate-500', 'border-transparent');
+        tabBodies.classList.remove('text-red-400', 'border-red-500');
         
-        fabAdd.classList.add('hidden');
-        if (fabImport) fabImport.classList.add('hidden');
+        fabContainerItemHp.classList.add('hidden');
+        fabContainerBodies.classList.add('hidden');
         
         canvasRect = spellCanvasContainer.getBoundingClientRect();
+    });
+
+    tabBodies.addEventListener('click', () => {
+        viewBodies.classList.remove('hidden');
+        viewItemHp.classList.add('hidden');
+        viewSpellCircle.classList.add('hidden');
+
+        tabBodies.classList.add('text-red-400', 'border-red-500');
+        tabBodies.classList.remove('text-slate-500', 'border-transparent');
+
+        tabItemHp.classList.add('text-slate-500', 'border-transparent');
+        tabItemHp.classList.remove('text-red-400', 'border-red-500');
+
+        tabSpellCircle.classList.add('text-slate-500', 'border-transparent');
+        tabSpellCircle.classList.remove('text-red-400', 'border-red-500');
+
+        fabContainerItemHp.classList.add('hidden');
+        fabContainerBodies.classList.remove('hidden');
+    });
+}
+
+// ---------------------------------------------
+// Bodies Logic
+// ---------------------------------------------
+function initBodyListeners() {
+    if (fabAddBody) {
+        fabAddBody.addEventListener('click', () => openBodyModal());
+    }
+    if (btnAddBodyTop) {
+        btnAddBodyTop.addEventListener('click', () => openBodyModal());
+    }
+
+    document.getElementById('body-modal-close').addEventListener('click', closeBodyModal);
+    bodyModal.addEventListener('click', (e) => { if (e.target === bodyModal) closeBodyModal(); });
+    bodyForm.addEventListener('submit', saveBodyCharacter);
+
+    document.getElementById('body-part-modal-close').addEventListener('click', closeBodyPartModal);
+    bodyPartModal.addEventListener('click', (e) => { if (e.target === bodyPartModal) closeBodyPartModal(); });
+
+    document.querySelectorAll('#body-color-palette button').forEach(btn => {
+        btn.addEventListener('click', () => {
+            selectedPartColor = btn.dataset.color;
+            document.querySelectorAll('#body-color-palette button').forEach(b => b.classList.remove('ring-2', 'ring-white'));
+            btn.classList.add('ring-2', 'ring-white');
+        });
+    });
+
+    document.getElementById('body-part-clear').addEventListener('click', () => {
+        saveBodyPartData('', '#020617');
+    });
+
+    document.getElementById('body-part-save').addEventListener('click', () => {
+        const desc = document.getElementById('body-part-desc').value.trim();
+        saveBodyPartData(desc, selectedPartColor);
+    });
+}
+
+function openBodyModal() {
+    document.getElementById('input-body-name').value = '';
+    document.getElementById('input-body-gender').value = 'Male';
+    bodyModal.classList.remove('hidden');
+    document.getElementById('input-body-name').focus();
+}
+
+function closeBodyModal() {
+    bodyModal.classList.add('hidden');
+}
+
+async function saveBodyCharacter(e) {
+    e.preventDefault();
+    const name = document.getElementById('input-body-name').value.trim();
+    const gender = document.getElementById('input-body-gender').value;
+
+    if (!name) return;
+
+    const bodyData = {
+        name,
+        gender,
+        parts: {} // e.g. { head: { color: '#ef4444', desc: 'Head injury' } }
+    };
+
+    closeBodyModal();
+
+    if (useLocalStorage) {
+        bodies.push({ id: 'local_body_' + Date.now(), ...bodyData });
+        saveToLocalStorage();
+        renderBodies();
+        return;
+    }
+
+    if (!currentUser) {
+        showError("Not signed in.");
+        return;
+    }
+
+    updateSyncStatus('saving', 'Saving character...');
+    try {
+        bodyData.createdAt = serverTimestamp();
+        await addDoc(collection(db, 'users', currentUser.uid, 'dnd_bodies'), bodyData);
+        updateSyncStatus('connected', 'Synced');
+    } catch (err) {
+        console.error("Error saving character:", err);
+        showError("Failed to save character.");
+    }
+}
+
+async function deleteBodyCharacter(bodyId) {
+    if (useLocalStorage) {
+        bodies = bodies.filter(b => b.id !== bodyId);
+        saveToLocalStorage();
+        renderBodies();
+        return;
+    }
+
+    if (!currentUser) return;
+    updateSyncStatus('saving', 'Deleting...');
+    try {
+        await deleteDoc(doc(db, 'users', currentUser.uid, 'dnd_bodies', bodyId));
+        updateSyncStatus('connected', 'Synced');
+    } catch (err) {
+        console.error("Error deleting character:", err);
+        showError("Failed to delete character.");
+    }
+}
+
+function openBodyPartModal(bodyId, partId) {
+    activeBodyId = bodyId;
+    activeBodyPartId = partId;
+    const body = bodies.find(b => b.id === bodyId);
+    if (!body) return;
+
+    const partData = body.parts?.[partId] || { color: '#020617', desc: '' };
+    selectedPartColor = partData.color || '#10b981';
+    document.getElementById('body-part-desc').value = partData.desc || '';
+    
+    const partObj = BODY_PARTS.find(p => p.id === partId);
+    document.getElementById('body-part-title').textContent = `${body.name} - ${partObj ? partObj.label : partId}`;
+
+    document.querySelectorAll('#body-color-palette button').forEach(b => {
+        if (b.dataset.color === selectedPartColor) {
+            b.classList.add('ring-2', 'ring-white');
+        } else {
+            b.classList.remove('ring-2', 'ring-white');
+        }
+    });
+
+    bodyPartModal.classList.remove('hidden');
+}
+
+function closeBodyPartModal() {
+    bodyPartModal.classList.add('hidden');
+    activeBodyId = null;
+    activeBodyPartId = null;
+}
+
+async function saveBodyPartData(desc, color) {
+    if (!activeBodyId || !activeBodyPartId) return;
+    const body = bodies.find(b => b.id === activeBodyId);
+    if (!body) return;
+
+    if (!body.parts) body.parts = {};
+    if (!desc && color === '#020617') {
+        delete body.parts[activeBodyPartId];
+    } else {
+        body.parts[activeBodyPartId] = { color, desc };
+    }
+
+    closeBodyPartModal();
+    renderBodies();
+
+    if (useLocalStorage) {
+        saveToLocalStorage();
+        return;
+    }
+
+    if (!currentUser) return;
+    updateSyncStatus('saving', 'Saving...');
+    try {
+        await updateDoc(doc(db, 'users', currentUser.uid, 'dnd_bodies', activeBodyId), {
+            parts: body.parts
+        });
+        updateSyncStatus('connected', 'Synced');
+    } catch (err) {
+        console.error("Error updating body part:", err);
+        showError("Failed to update body part.");
+    }
+}
+
+function renderBodies() {
+    const container = document.getElementById('bodies-container');
+    if (!container) return;
+
+    if (bodies.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-slate-500 py-16 flex flex-col items-center bg-slate-900/50 rounded-2xl border border-slate-800/80 p-6">
+                <i class="fas fa-child text-4xl mb-3 text-slate-600"></i>
+                <p class="font-bold text-slate-300">No characters added yet</p>
+                <p class="text-xs text-slate-500 mt-1">Tap the + button above to add a player character.</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = '';
+    bodies.forEach(body => {
+        const card = document.createElement('div');
+        card.className = "bg-slate-900/90 rounded-2xl p-4 border border-slate-800 flex flex-col gap-3 relative";
+
+        const getPartColor = (partId) => body.parts?.[partId]?.color || '#1e293b';
+        const getPartDesc = (partId) => body.parts?.[partId]?.desc || '';
+
+        card.innerHTML = `
+            <div class="flex justify-between items-start">
+                <div>
+                    <h3 class="font-bold text-white text-base">${body.name}</h3>
+                    <p class="text-xs text-slate-400 capitalize">Gender: ${body.gender}</p>
+                </div>
+                <button class="delete-body-btn text-slate-500 hover:text-red-400 transition-colors p-1" data-id="${body.id}">
+                    <i class="fas fa-trash-can text-sm"></i>
+                </button>
+            </div>
+
+            <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col items-center">
+                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3">Body Condition Map</p>
+                
+                <!-- Silhouette / Body interactive parts -->
+                <div class="w-48 flex flex-col items-center gap-2">
+                    <!-- Head -->
+                    <button class="body-part-btn w-20 h-12 rounded-full border border-slate-700 flex items-center justify-center text-xs font-semibold text-slate-200 transition-all hover:scale-105" style="background-color: ${getPartColor('head')}" data-part="head" data-id="${body.id}" title="${getPartDesc('head') || 'Head'}">
+                        Head
+                    </button>
+                    
+                    <!-- Arms and Torso row -->
+                    <div class="flex items-center gap-2 w-full justify-center">
+                        <button class="body-part-btn w-12 h-24 rounded-lg border border-slate-700 flex items-center justify-center text-[11px] font-semibold text-slate-200 transition-all hover:scale-105" style="background-color: ${getPartColor('l_arm')}" data-part="l_arm" data-id="${body.id}" title="${getPartDesc('l_arm') || 'Left Arm'}">
+                            L.Arm
+                        </button>
+                        <button class="body-part-btn w-24 h-28 rounded-xl border border-slate-700 flex items-center justify-center text-xs font-semibold text-slate-200 transition-all hover:scale-105" style="background-color: ${getPartColor('torso')}" data-part="torso" data-id="${body.id}" title="${getPartDesc('torso') || 'Torso'}">
+                            Torso
+                        </button>
+                        <button class="body-part-btn w-12 h-24 rounded-lg border border-slate-700 flex items-center justify-center text-[11px] font-semibold text-slate-200 transition-all hover:scale-105" style="background-color: ${getPartColor('r_arm')}" data-part="r_arm" data-id="${body.id}" title="${getPartDesc('r_arm') || 'Right Arm'}">
+                            R.Arm
+                        </button>
+                    </div>
+
+                    <!-- Legs -->
+                    <div class="flex items-center gap-3 justify-center">
+                        <button class="body-part-btn w-14 h-28 rounded-lg border border-slate-700 flex items-center justify-center text-[11px] font-semibold text-slate-200 transition-all hover:scale-105" style="background-color: ${getPartColor('l_leg')}" data-part="l_leg" data-id="${body.id}" title="${getPartDesc('l_leg') || 'Left Leg'}">
+                            L.Leg
+                        </button>
+                        <button class="body-part-btn w-14 h-28 rounded-lg border border-slate-700 flex items-center justify-center text-[11px] font-semibold text-slate-200 transition-all hover:scale-105" style="background-color: ${getPartColor('r_leg')}" data-part="r_leg" data-id="${body.id}" title="${getPartDesc('r_leg') || 'Right Leg'}">
+                            R.Leg
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        card.querySelector('.delete-body-btn').addEventListener('click', () => {
+            if (confirm(`Delete character ${body.name}?`)) deleteBodyCharacter(body.id);
+        });
+
+        card.querySelectorAll('.body-part-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                openBodyPartModal(btn.dataset.id, btn.dataset.part);
+            });
+        });
+
+        container.appendChild(card);
     });
 }
 
@@ -586,14 +891,19 @@ function enableLocalStorageMode(statusText) {
 
     const localSpells = localStorage.getItem('dnd_hp_spells');
     spells = localSpells ? JSON.parse(localSpells) : [];
+
+    const localBodies = localStorage.getItem('dnd_hp_bodies');
+    bodies = localBodies ? JSON.parse(localBodies) : [];
     
     renderItems();
     renderSavedSpells();
+    renderBodies();
 }
 
 function saveToLocalStorage() {
     localStorage.setItem('dnd_hp_items', JSON.stringify(items));
     localStorage.setItem('dnd_hp_spells', JSON.stringify(spells));
+    localStorage.setItem('dnd_hp_bodies', JSON.stringify(bodies));
 }
 
 function loadFirestoreData() {
@@ -621,6 +931,14 @@ function loadFirestoreData() {
         snapshot.forEach((docSnap) => spells.push({ id: docSnap.id, ...docSnap.data() }));
         spells.sort((a, b) => (a.createdAt?.toMillis() || 0) - (b.createdAt?.toMillis() || 0));
         renderSavedSpells();
+    });
+
+    const bodiesCollectionRef = collection(db, 'users', currentUser.uid, 'dnd_bodies');
+    unsubscribeBodies = onSnapshot(bodiesCollectionRef, (snapshot) => {
+        bodies = [];
+        snapshot.forEach((docSnap) => bodies.push({ id: docSnap.id, ...docSnap.data() }));
+        bodies.sort((a, b) => (a.createdAt?.toMillis() || 0) - (b.createdAt?.toMillis() || 0));
+        renderBodies();
     });
 }
 

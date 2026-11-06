@@ -13,7 +13,8 @@ body {
 }
 
 .form-input,
-.form-textarea {
+.form-textarea,
+select.form-input {
     width: 100%;
     background-color: #020617;
     border: 1px solid #1e293b;
@@ -26,7 +27,8 @@ body {
 }
 
 .form-input:focus,
-.form-textarea:focus {
+.form-textarea:focus,
+select.form-input:focus {
     border-color: #ef4444;
     box-shadow: 0 0 0 1px #ef4444;
 }
