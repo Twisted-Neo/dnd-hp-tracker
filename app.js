@@ -30,39 +30,13 @@ const PROPERTY_ICONS = [
 ];
 
 const ITEM_TEMPLATE = [
-    {
-        "name": "Magic Shield",
-        "currentHp": 15,
-        "maxHp": 20,
-        "color": "#3b82f6",
-        "properties": [
-            {
-                "icon": "fa-shield-halved",
-                "name": "Defense",
-                "description": "Provides +2 AC against ranged attacks."
-            }
-        ]
-    },
-    {
-        "name": "Familiar",
-        "currentHp": 8,
-        "maxHp": 8,
-        "color": "#10b981",
-        "properties": []
-    }
+    { "name": "Magic Shield", "currentHp": 15, "maxHp": 20, "color": "#3b82f6", "properties": [ { "icon": "fa-shield-halved", "name": "Defense", "description": "Provides +2 AC against ranged attacks." } ] },
+    { "name": "Familiar", "currentHp": 8, "maxHp": 8, "color": "#10b981", "properties": [] }
 ];
 
 const SPELL_TEMPLATE = [
-    {
-        "name": "Fireball",
-        "description": "A bright streak flashes from your pointing finger.",
-        "sequence": [0, 4, 8]
-    },
-    {
-        "name": "Magic Missile",
-        "description": "You create three glowing darts of magical force.",
-        "sequence": [1, 2, 5]
-    }
+    { "name": "Fireball", "description": "A bright streak flashes from your pointing finger.", "sequence": [0, 4, 8] },
+    { "name": "Magic Missile", "description": "You create three glowing darts of magical force.", "sequence": [1, 2, 5] }
 ];
 
 // App State
@@ -71,10 +45,10 @@ let auth = null;
 let currentUser = null;
 let items = [];
 let spells = [];
-let bodies = [];
+let bodies = []; // New Bodies state
 let unsubscribeItems = null;
 let unsubscribeSpells = null;
-let unsubscribeBodies = null;
+let unsubscribeBodies = null; // New Bodies unsubscribe
 let editingItemId = null;
 let useLocalStorage = false;
 let authMode = 'login'; 
@@ -82,32 +56,19 @@ let tempProperties = [];
 let currentImportType = 'items';
 let draggedItemId = null;
 
-// Body System State
-const BODY_PARTS = [
-    { id: 'head', label: 'Head' },
-    { id: 'l_arm', label: 'Left Arm' },
-    { id: 'r_arm', label: 'Right Arm' },
-    { id: 'torso', label: 'Torso' },
-    { id: 'l_leg', label: 'Left Leg' },
-    { id: 'r_leg', label: 'Right Leg' }
-];
+// Active Body State
 let activeBodyId = null;
-let activeBodyPartId = null;
-let selectedPartColor = '#10b981';
+let activeBodyPart = null;
+let activeNoteColor = '#ef4444';
 
 // DOM Elements
 const syncStatus = document.getElementById('sync-status');
 const errorToast = document.getElementById('error-toast');
 const errorMessage = document.getElementById('error-message');
 const authBanner = document.getElementById('auth-banner');
-
-// FAB Containers
-const fabContainerItemHp = document.getElementById('fab-container-itemhp');
-const fabContainerBodies = document.getElementById('fab-container-bodies');
 const fabAdd = document.getElementById('fab-add');
 const fabImport = document.getElementById('fab-import');
-const fabAddBody = document.getElementById('fab-add-body');
-const btnAddBodyTop = document.getElementById('btn-add-body-top');
+const fabContainer = document.getElementById('fab-container');
 const btnImportSpells = document.getElementById('btn-import-spells');
 
 // Navigation
@@ -117,6 +78,14 @@ const viewBodies = document.getElementById('view-bodies');
 const tabItemHp = document.getElementById('tab-itemhp');
 const tabSpellCircle = document.getElementById('tab-spellcircle');
 const tabBodies = document.getElementById('tab-bodies');
+
+// Bodies UI Elements
+const bodiesListView = document.getElementById('bodies-list-view');
+const activeBodyView = document.getElementById('active-body-view');
+const bodiesListContainer = document.getElementById('bodies-list');
+const activeBodyName = document.getElementById('active-body-name');
+const activeBodyGender = document.getElementById('active-body-gender');
+const bodyInteractiveZones = document.getElementById('body-interactive-zones');
 
 // Spell Circle Elements
 const spellCanvasContainer = document.getElementById('spell-canvas-container');
@@ -135,8 +104,7 @@ const authModal = document.getElementById('auth-modal');
 const propertyModal = document.getElementById('property-modal');
 const amountModal = document.getElementById('amount-modal');
 const importModal = document.getElementById('import-modal');
-const bodyModal = document.getElementById('body-modal');
-const bodyForm = document.getElementById('body-form');
+const characterModal = document.getElementById('character-modal');
 const bodyPartModal = document.getElementById('body-part-modal');
 
 const nameInput = document.getElementById('input-name');
@@ -182,7 +150,7 @@ async function initApp() {
     initNavigation();
     initSpellCircle();
     initImportListeners();
-    initBodyListeners();
+    initBodiesListeners();
     
     try {
         const app = initializeApp(firebaseConfig);
@@ -194,7 +162,7 @@ async function initApp() {
                 currentUser = user;
                 useLocalStorage = false;
                 if (authBanner) authBanner.classList.add('hidden');
-                updateSyncStatus('connected', 'Synced');
+                updateSyncStatus('connected', 'Connected');
                 loadFirestoreData();
             } else {
                 currentUser = null;
@@ -213,317 +181,281 @@ async function initApp() {
 
 // Navigation Logic
 function initNavigation() {
-    tabItemHp.addEventListener('click', () => {
-        viewItemHp.classList.remove('hidden');
-        viewSpellCircle.classList.add('hidden');
-        viewBodies.classList.add('hidden');
+    const views = [viewItemHp, viewSpellCircle, viewBodies];
+    const tabs = [tabItemHp, tabSpellCircle, tabBodies];
+
+    function switchTab(activeTab, activeView) {
+        views.forEach(v => v.classList.add('hidden'));
+        activeView.classList.remove('hidden');
         
-        tabItemHp.classList.add('text-red-400', 'border-red-500');
-        tabItemHp.classList.remove('text-slate-500', 'border-transparent');
+        tabs.forEach(t => {
+            t.classList.add('text-slate-500', 'border-transparent');
+            t.classList.remove('text-red-400', 'border-red-500');
+        });
+        activeTab.classList.add('text-red-400', 'border-red-500');
+        activeTab.classList.remove('text-slate-500', 'border-transparent');
         
-        tabSpellCircle.classList.add('text-slate-500', 'border-transparent');
-        tabSpellCircle.classList.remove('text-red-400', 'border-red-500');
+        if (activeView === viewItemHp) {
+            fabContainer.classList.remove('hidden', 'opacity-0');
+        } else {
+            fabContainer.classList.add('hidden');
+        }
 
-        tabBodies.classList.add('text-slate-500', 'border-transparent');
-        tabBodies.classList.remove('text-red-400', 'border-red-500');
-        
-        fabContainerItemHp.classList.remove('hidden');
-        fabContainerBodies.classList.add('hidden');
-    });
+        if (activeView === viewSpellCircle) {
+            canvasRect = spellCanvasContainer.getBoundingClientRect();
+        }
+    }
 
-    tabSpellCircle.addEventListener('click', () => {
-        viewSpellCircle.classList.remove('hidden');
-        viewItemHp.classList.add('hidden');
-        viewBodies.classList.add('hidden');
-        
-        tabSpellCircle.classList.add('text-red-400', 'border-red-500');
-        tabSpellCircle.classList.remove('text-slate-500', 'border-transparent');
-        
-        tabItemHp.classList.add('text-slate-500', 'border-transparent');
-        tabItemHp.classList.remove('text-red-400', 'border-red-500');
-
-        tabBodies.classList.add('text-slate-500', 'border-transparent');
-        tabBodies.classList.remove('text-red-400', 'border-red-500');
-        
-        fabContainerItemHp.classList.add('hidden');
-        fabContainerBodies.classList.add('hidden');
-        
-        canvasRect = spellCanvasContainer.getBoundingClientRect();
-    });
-
-    tabBodies.addEventListener('click', () => {
-        viewBodies.classList.remove('hidden');
-        viewItemHp.classList.add('hidden');
-        viewSpellCircle.classList.add('hidden');
-
-        tabBodies.classList.add('text-red-400', 'border-red-500');
-        tabBodies.classList.remove('text-slate-500', 'border-transparent');
-
-        tabItemHp.classList.add('text-slate-500', 'border-transparent');
-        tabItemHp.classList.remove('text-red-400', 'border-red-500');
-
-        tabSpellCircle.classList.add('text-slate-500', 'border-transparent');
-        tabSpellCircle.classList.remove('text-red-400', 'border-red-500');
-
-        fabContainerItemHp.classList.add('hidden');
-        fabContainerBodies.classList.remove('hidden');
-    });
+    tabItemHp.addEventListener('click', () => switchTab(tabItemHp, viewItemHp));
+    tabSpellCircle.addEventListener('click', () => switchTab(tabSpellCircle, viewSpellCircle));
+    tabBodies.addEventListener('click', () => switchTab(tabBodies, viewBodies));
 }
 
 // ---------------------------------------------
 // Bodies Logic
 // ---------------------------------------------
-function initBodyListeners() {
-    if (fabAddBody) {
-        fabAddBody.addEventListener('click', () => openBodyModal());
-    }
-    if (btnAddBodyTop) {
-        btnAddBodyTop.addEventListener('click', () => openBodyModal());
-    }
-
-    document.getElementById('body-modal-close').addEventListener('click', closeBodyModal);
-    bodyModal.addEventListener('click', (e) => { if (e.target === bodyModal) closeBodyModal(); });
-    bodyForm.addEventListener('submit', saveBodyCharacter);
-
-    document.getElementById('body-part-modal-close').addEventListener('click', closeBodyPartModal);
-    bodyPartModal.addEventListener('click', (e) => { if (e.target === bodyPartModal) closeBodyPartModal(); });
-
-    document.querySelectorAll('#body-color-palette button').forEach(btn => {
-        btn.addEventListener('click', () => {
-            selectedPartColor = btn.dataset.color;
-            document.querySelectorAll('#body-color-palette button').forEach(b => b.classList.remove('ring-2', 'ring-white'));
-            btn.classList.add('ring-2', 'ring-white');
+function initBodiesListeners() {
+    document.getElementById('btn-add-body').addEventListener('click', () => openCharacterModal());
+    document.getElementById('character-modal-close').addEventListener('click', () => characterModal.classList.add('hidden'));
+    document.getElementById('character-form').addEventListener('submit', saveCharacter);
+    
+    document.getElementById('btn-back-to-bodies').addEventListener('click', showBodiesList);
+    document.getElementById('body-part-close').addEventListener('click', () => bodyPartModal.classList.add('hidden'));
+    
+    // Color picker buttons
+    document.querySelectorAll('.note-color-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.note-color-btn').forEach(b => b.classList.remove('active', 'border-white'));
+            e.target.classList.add('active', 'border-white');
+            activeNoteColor = e.target.dataset.color;
         });
     });
 
-    document.getElementById('body-part-clear').addEventListener('click', () => {
-        saveBodyPartData('', '#020617');
+    document.getElementById('btn-clear-note').addEventListener('click', () => saveBodyNote(true));
+    document.getElementById('btn-save-note').addEventListener('click', () => saveBodyNote(false));
+
+    // Setup click zones on the body
+    document.querySelectorAll('.body-part').forEach(zone => {
+        zone.addEventListener('click', () => openBodyPartModal(zone.dataset.part));
     });
-
-    document.getElementById('body-part-save').addEventListener('click', () => {
-        const desc = document.getElementById('body-part-desc').value.trim();
-        saveBodyPartData(desc, selectedPartColor);
-    });
 }
 
-function openBodyModal() {
-    document.getElementById('input-body-name').value = '';
-    document.getElementById('input-body-gender').value = 'Male';
-    bodyModal.classList.remove('hidden');
-    document.getElementById('input-body-name').focus();
+function showBodiesList() {
+    activeBodyId = null;
+    activeBodyView.classList.add('hidden');
+    bodiesListView.classList.remove('hidden');
+    renderBodiesList();
 }
 
-function closeBodyModal() {
-    bodyModal.classList.add('hidden');
+function openCharacterModal() {
+    document.getElementById('character-form').reset();
+    document.getElementById('character-modal-title').textContent = 'Add Character';
+    characterModal.classList.remove('hidden');
+    document.getElementById('char-name').focus();
 }
 
-async function saveBodyCharacter(e) {
+async function saveCharacter(e) {
     e.preventDefault();
-    const name = document.getElementById('input-body-name').value.trim();
-    const gender = document.getElementById('input-body-gender').value;
+    const name = document.getElementById('char-name').value.trim();
+    const gender = document.querySelector('input[name="char-gender"]:checked').value;
 
     if (!name) return;
 
-    const bodyData = {
-        name,
-        gender,
-        parts: {}
-    };
-
-    closeBodyModal();
+    const charData = { name, gender, notes: {} };
+    characterModal.classList.add('hidden');
 
     if (useLocalStorage) {
-        bodies.push({ id: 'local_body_' + Date.now(), ...bodyData });
+        bodies.push({ id: 'local_body_' + Date.now(), ...charData });
         saveToLocalStorage();
-        renderBodies();
-        return;
-    }
-
-    if (!currentUser) {
-        showError("Not signed in.");
-        return;
-    }
-
-    updateSyncStatus('saving', 'Saving character...');
-    try {
-        bodyData.createdAt = serverTimestamp();
-        const docRef = await addDoc(collection(db, 'users', currentUser.uid, 'dnd_bodies'), bodyData);
-        bodyData.id = docRef.id;
-        bodies.push(bodyData);
-        renderBodies();
-        updateSyncStatus('connected', 'Synced');
-    } catch (err) {
-        console.error("Error saving character:", err);
-        showError("Failed to save character.");
-    }
-}
-
-async function deleteBodyCharacter(bodyId) {
-    if (useLocalStorage) {
-        bodies = bodies.filter(b => b.id !== bodyId);
-        saveToLocalStorage();
-        renderBodies();
+        renderBodiesList();
         return;
     }
 
     if (!currentUser) return;
-    updateSyncStatus('saving', 'Deleting...');
+    updateSyncStatus('saving', 'Saving...');
     try {
-        await deleteDoc(doc(db, 'users', currentUser.uid, 'dnd_bodies', bodyId));
-        updateSyncStatus('connected', 'Synced');
-    } catch (err) {
-        console.error("Error deleting character:", err);
+        charData.createdAt = serverTimestamp();
+        await addDoc(collection(db, 'users', currentUser.uid, 'dnd_bodies'), charData);
+    } catch (error) {
+        showError("Failed to save character.");
+    }
+}
+
+async function deleteCharacter(id) {
+    if (!confirm("Delete this character?")) return;
+    if (useLocalStorage) {
+        bodies = bodies.filter(b => b.id !== id);
+        saveToLocalStorage();
+        renderBodiesList();
+        return;
+    }
+    if (!currentUser) return;
+    try {
+        await deleteDoc(doc(db, 'users', currentUser.uid, 'dnd_bodies', id));
+    } catch (error) {
         showError("Failed to delete character.");
     }
 }
 
-function openBodyPartModal(bodyId, partId) {
-    if (!bodyId || bodyId === 'undefined' || bodyId === 'null') {
-        showError("Character ID is missing.");
+function renderBodiesList() {
+    if (!bodiesListContainer) return;
+    if (bodies.length === 0) {
+        bodiesListContainer.innerHTML = `
+            <div class="text-center text-slate-500 py-10 flex flex-col items-center bg-slate-900/50 rounded-2xl border border-slate-800/80 p-6">
+                <i class="fas fa-users text-3xl mb-3 text-slate-600"></i>
+                <p class="font-bold text-slate-300 text-sm">No characters tracked</p>
+                <p class="text-xs text-slate-500 mt-1">Add a character to track body notes.</p>
+            </div>
+        `;
         return;
     }
-    activeBodyId = bodyId;
-    activeBodyPartId = partId;
-    const body = bodies.find(b => b.id === bodyId);
-    if (!body) return;
 
-    const partData = body.parts?.[partId] || { color: '#020617', desc: '' };
-    selectedPartColor = partData.color || '#10b981';
-    document.getElementById('body-part-desc').value = partData.desc || '';
+    bodiesListContainer.innerHTML = '';
+    bodies.forEach(body => {
+        const card = document.createElement('div');
+        card.className = "bg-slate-900/90 rounded-2xl p-4 border border-slate-800 flex justify-between items-center cursor-pointer hover:border-slate-600 transition-colors";
+        
+        card.innerHTML = `
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-white text-base">${body.name}</h3>
+                    <p class="text-xs text-slate-400 font-medium uppercase tracking-wider">${body.gender}</p>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button class="view-body-btn text-slate-400 hover:text-white p-2"><i class="fas fa-eye"></i></button>
+                <button class="del-body-btn text-slate-400 hover:text-red-400 p-2"><i class="fas fa-trash-can"></i></button>
+            </div>
+        `;
+
+        card.querySelector('.view-body-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            openActiveBody(body);
+        });
+        card.addEventListener('click', () => openActiveBody(body));
+        card.querySelector('.del-body-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            deleteCharacter(body.id);
+        });
+
+        bodiesListContainer.appendChild(card);
+    });
+}
+
+function openActiveBody(body) {
+    activeBodyId = body.id;
+    bodiesListView.classList.add('hidden');
+    activeBodyView.classList.remove('hidden');
     
-    const partObj = BODY_PARTS.find(p => p.id === partId);
-    document.getElementById('body-part-title').textContent = `${body.name} - ${partObj ? partObj.label : partId}`;
+    activeBodyName.textContent = body.name;
+    activeBodyGender.textContent = body.gender;
 
-    document.querySelectorAll('#body-color-palette button').forEach(b => {
-        if (b.dataset.color === selectedPartColor) {
-            b.classList.add('ring-2', 'ring-white');
-        } else {
-            b.classList.remove('ring-2', 'ring-white');
+    renderBodyMapMarkers(body);
+}
+
+function renderBodyMapMarkers(body) {
+    // Clear existing markers
+    document.querySelectorAll('.body-marker').forEach(m => m.remove());
+    
+    if (!body.notes) return;
+
+    // Position mapping for the markers (approx center of the zones)
+    const positions = {
+        'Head': { top: '10%', left: '50%' },
+        'Torso': { top: '33%', left: '50%' },
+        'Left Arm': { top: '32%', left: '20%' },
+        'Right Arm': { top: '32%', left: '80%' },
+        'Left Leg': { top: '70%', left: '40%' },
+        'Right Leg': { top: '70%', left: '60%' }
+    };
+
+    Object.keys(body.notes).forEach(part => {
+        const note = body.notes[part];
+        if (note && note.color && positions[part]) {
+            const marker = document.createElement('div');
+            marker.className = 'body-marker';
+            marker.style.backgroundColor = note.color;
+            marker.style.top = positions[part].top;
+            marker.style.left = positions[part].left;
+            document.getElementById('body-map').appendChild(marker);
         }
     });
+}
+
+function openBodyPartModal(part) {
+    if (!activeBodyId) return;
+    
+    const body = bodies.find(b => b.id === activeBodyId);
+    if (!body) return;
+
+    activeBodyPart = part;
+    document.getElementById('body-part-title').textContent = part;
+
+    // Reset color picker
+    document.querySelectorAll('.note-color-btn').forEach(b => b.classList.remove('active', 'border-white'));
+    
+    const descInput = document.getElementById('body-part-desc');
+    descInput.value = '';
+
+    const existingNote = body.notes && body.notes[part];
+    if (existingNote) {
+        descInput.value = existingNote.description || '';
+        activeNoteColor = existingNote.color || '#ef4444';
+        
+        const activeBtn = document.querySelector(`.note-color-btn[data-color="${activeNoteColor}"]`);
+        if (activeBtn) {
+            activeBtn.classList.add('active', 'border-white');
+        }
+    } else {
+        // Default to red
+        activeNoteColor = '#ef4444';
+        document.querySelector('.note-color-btn[data-color="#ef4444"]').classList.add('active', 'border-white');
+    }
 
     bodyPartModal.classList.remove('hidden');
 }
 
-function closeBodyPartModal() {
-    bodyPartModal.classList.add('hidden');
-    activeBodyId = null;
-    activeBodyPartId = null;
-}
+async function saveBodyNote(isClear = false) {
+    if (!activeBodyId || !activeBodyPart) return;
 
-async function saveBodyPartData(desc, color) {
-    if (!activeBodyId || activeBodyId === 'undefined' || activeBodyId === 'null' || !activeBodyPartId) {
-        showError("Invalid character or body part.");
-        return;
-    }
-    const body = bodies.find(b => b.id === activeBodyId);
-    if (!body) return;
+    const bodyIndex = bodies.findIndex(b => b.id === activeBodyId);
+    if (bodyIndex === -1) return;
 
-    if (!body.parts) body.parts = {};
-    if (!desc && color === '#020617') {
-        delete body.parts[activeBodyPartId];
+    const body = bodies[bodyIndex];
+    if (!body.notes) body.notes = {};
+
+    if (isClear) {
+        delete body.notes[activeBodyPart];
     } else {
-        body.parts[activeBodyPartId] = { color, desc };
+        const desc = document.getElementById('body-part-desc').value.trim();
+        body.notes[activeBodyPart] = {
+            color: activeNoteColor,
+            description: desc
+        };
     }
 
-    closeBodyPartModal();
-    renderBodies();
+    bodyPartModal.classList.add('hidden');
+    renderBodyMapMarkers(body);
 
-    if (useLocalStorage || !currentUser) {
+    // Persist changes
+    if (useLocalStorage) {
         saveToLocalStorage();
         return;
     }
 
+    if (!currentUser) return;
     updateSyncStatus('saving', 'Saving...');
     try {
-        await updateDoc(doc(db, 'users', currentUser.uid, 'dnd_bodies', activeBodyId), {
-            parts: body.parts
+        await updateDoc(doc(db, 'users', currentUser.uid, 'dnd_bodies', body.id), {
+            notes: body.notes
         });
         updateSyncStatus('connected', 'Synced');
-    } catch (err) {
-        console.error("Error updating body part:", err);
-        showError("Failed to update body part.");
+    } catch (error) {
+        showError("Failed to save body note.");
     }
-}
-
-function renderBodies() {
-    const container = document.getElementById('bodies-container');
-    if (!container) return;
-
-    if (bodies.length === 0) {
-        container.innerHTML = `
-            <div class="text-center text-slate-500 py-16 flex flex-col items-center bg-slate-900/50 rounded-2xl border border-slate-800/80 p-6">
-                <i class="fas fa-child text-4xl mb-3 text-slate-600"></i>
-                <p class="font-bold text-slate-300">No characters added yet</p>
-                <p class="text-xs text-slate-500 mt-1">Tap the + button above to add a player character.</p>
-            </div>
-        `;
-        return;
-    }
-
-    container.innerHTML = '';
-    bodies.forEach(body => {
-        const card = document.createElement('div');
-        card.className = "bg-slate-900/90 rounded-2xl p-4 border border-slate-800 flex flex-col gap-3 relative";
-
-        const getPartColor = (partId) => body.parts?.[partId]?.color || '#1e293b';
-        const getPartDesc = (partId) => body.parts?.[partId]?.desc || '';
-
-        card.innerHTML = `
-            <div class="flex justify-between items-start">
-                <div>
-                    <h3 class="font-bold text-white text-base">${body.name}</h3>
-                    <p class="text-xs text-slate-400 capitalize">Gender: ${body.gender}</p>
-                </div>
-                <button class="delete-body-btn text-slate-500 hover:text-red-400 transition-colors p-1" data-id="${body.id}">
-                    <i class="fas fa-trash-can text-sm"></i>
-                </button>
-            </div>
-
-            <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col items-center">
-                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3">Body Condition Map</p>
-                
-                <div class="w-48 flex flex-col items-center gap-2">
-                    <button class="body-part-btn w-20 h-12 rounded-full border border-slate-700 flex items-center justify-center text-xs font-semibold text-slate-200 transition-all hover:scale-105" style="background-color: ${getPartColor('head')}" data-part="head" data-id="${body.id}" title="${getPartDesc('head') || 'Head'}">
-                        Head
-                    </button>
-                    
-                    <div class="flex items-center gap-2 w-full justify-center">
-                        <button class="body-part-btn w-12 h-24 rounded-lg border border-slate-700 flex items-center justify-center text-[11px] font-semibold text-slate-200 transition-all hover:scale-105" style="background-color: ${getPartColor('l_arm')}" data-part="l_arm" data-id="${body.id}" title="${getPartDesc('l_arm') || 'Left Arm'}">
-                            L.Arm
-                        </button>
-                        <button class="body-part-btn w-24 h-28 rounded-xl border border-slate-700 flex items-center justify-center text-xs font-semibold text-slate-200 transition-all hover:scale-105" style="background-color: ${getPartColor('torso')}" data-part="torso" data-id="${body.id}" title="${getPartDesc('torso') || 'Torso'}">
-                            Torso
-                        </button>
-                        <button class="body-part-btn w-12 h-24 rounded-lg border border-slate-700 flex items-center justify-center text-[11px] font-semibold text-slate-200 transition-all hover:scale-105" style="background-color: ${getPartColor('r_arm')}" data-part="r_arm" data-id="${body.id}" title="${getPartDesc('r_arm') || 'Right Arm'}">
-                            R.Arm
-                        </button>
-                    </div>
-
-                    <div class="flex items-center gap-3 justify-center">
-                        <button class="body-part-btn w-14 h-28 rounded-lg border border-slate-700 flex items-center justify-center text-[11px] font-semibold text-slate-200 transition-all hover:scale-105" style="background-color: ${getPartColor('l_leg')}" data-part="l_leg" data-id="${body.id}" title="${getPartDesc('l_leg') || 'Left Leg'}">
-                            L.Leg
-                        </button>
-                        <button class="body-part-btn w-14 h-28 rounded-lg border border-slate-700 flex items-center justify-center text-[11px] font-semibold text-slate-200 transition-all hover:scale-105" style="background-color: ${getPartColor('r_leg')}" data-part="r_leg" data-id="${body.id}" title="${getPartDesc('r_leg') || 'Right Leg'}">
-                            R.Leg
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        card.querySelector('.delete-body-btn').addEventListener('click', () => {
-            if (confirm(`Delete character ${body.name}?`)) deleteBodyCharacter(body.id);
-        });
-
-        card.querySelectorAll('.body-part-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                openBodyPartModal(btn.dataset.id, btn.dataset.part);
-            });
-        });
-
-        container.appendChild(card);
-    });
 }
 
 // ---------------------------------------------
@@ -902,7 +834,7 @@ function enableLocalStorageMode(statusText) {
     
     renderItems();
     renderSavedSpells();
-    renderBodies();
+    showBodiesList();
 }
 
 function saveToLocalStorage() {
@@ -943,7 +875,16 @@ function loadFirestoreData() {
         bodies = [];
         snapshot.forEach((docSnap) => bodies.push({ id: docSnap.id, ...docSnap.data() }));
         bodies.sort((a, b) => (a.createdAt?.toMillis() || 0) - (b.createdAt?.toMillis() || 0));
-        renderBodies();
+        
+        renderBodiesList();
+        if (activeBodyId) {
+            const active = bodies.find(b => b.id === activeBodyId);
+            if (active) {
+                openActiveBody(active); // Refresh active body markers
+            } else {
+                showBodiesList(); // Active body was deleted
+            }
+        }
     });
 }
 
@@ -1536,6 +1477,8 @@ itemModal.addEventListener('click', (e) => { if (e.target === itemModal) closeIt
 authModal.addEventListener('click', (e) => { if (e.target === authModal) authModal.classList.add('hidden'); });
 propertyModal.addEventListener('click', (e) => { if (e.target === propertyModal) propertyModal.classList.add('hidden'); });
 amountModal.addEventListener('click', (e) => { if (e.target === amountModal) closeAmountModal(); });
+characterModal.addEventListener('click', (e) => { if (e.target === characterModal) characterModal.classList.add('hidden'); });
+bodyPartModal.addEventListener('click', (e) => { if (e.target === bodyPartModal) bodyPartModal.classList.add('hidden'); });
 
 if (maxHpInput) {
     maxHpInput.addEventListener('input', (e) => {

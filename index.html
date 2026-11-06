@@ -99,17 +99,71 @@
 
         <!-- VIEW: Bodies -->
         <div id="view-bodies" class="hidden">
-            <div class="flex justify-between items-center mb-4 px-1">
-                <h2 class="text-sm font-bold text-slate-400 uppercase tracking-widest">Player Bodies</h2>
-                <button id="btn-add-body-top" class="text-xs text-red-400 hover:text-red-300 font-bold flex items-center gap-1.5">
-                    <i class="fas fa-plus"></i> Add Character
-                </button>
+            <!-- Body List View -->
+            <div id="bodies-list-view">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-bold text-white">Characters</h2>
+                    <button id="btn-add-body" class="btn-primary w-auto px-4 py-2 text-sm flex items-center gap-2">
+                        <i class="fas fa-plus"></i> Add Character
+                    </button>
+                </div>
+                <div id="bodies-list" class="flex flex-col gap-3">
+                    <!-- Character cards injected here -->
+                </div>
             </div>
-            <div id="bodies-container" class="flex flex-col gap-4">
-                <div class="text-center text-slate-500 py-16 flex flex-col items-center bg-slate-900/50 rounded-2xl border border-slate-800/80 p-6">
-                    <i class="fas fa-child text-4xl mb-3 text-slate-600"></i>
-                    <p class="font-bold text-slate-300">No characters added yet</p>
-                    <p class="text-xs text-slate-500 mt-1">Tap the + button below or above to add a player character.</p>
+
+            <!-- Active Body View -->
+            <div id="active-body-view" class="hidden">
+                <button id="btn-back-to-bodies" class="text-xs font-bold text-slate-400 hover:text-white mb-4 flex items-center gap-1">
+                    <i class="fas fa-arrow-left"></i> Back to Characters
+                </button>
+                
+                <div class="text-center mb-4">
+                    <h2 id="active-body-name" class="text-xl font-extrabold text-white"></h2>
+                    <p id="active-body-gender" class="text-xs text-slate-400 uppercase tracking-wider font-bold"></p>
+                </div>
+
+                <!-- Body Map Container -->
+                <div class="relative w-full max-w-[280px] mx-auto aspect-[1/2] bg-slate-900 border border-slate-700 rounded-2xl shadow-inner overflow-hidden" id="body-map">
+                    <!-- Base Body SVG -->
+                    <svg viewBox="0 0 200 400" class="absolute inset-0 w-full h-full opacity-30">
+                        <defs>
+                            <filter id="glow">
+                                <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                                <feMerge>
+                                    <feMergeNode in="coloredBlur"/>
+                                    <feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                            </filter>
+                        </defs>
+                        <g fill="#0ea5e9" stroke="#0ea5e9" stroke-width="2" filter="url(#glow)">
+                            <!-- Head -->
+                            <circle cx="100" cy="50" r="22" />
+                            <!-- Neck -->
+                            <rect x="90" y="72" width="20" height="10" />
+                            <!-- Torso -->
+                            <path d="M 70 82 L 130 82 L 115 190 L 85 190 Z" />
+                            <!-- Left Arm -->
+                            <path d="M 70 82 L 30 170 L 20 170 L 60 82 Z" />
+                            <!-- Right Arm -->
+                            <path d="M 130 82 L 170 170 L 180 170 L 140 82 Z" />
+                            <!-- Left Leg -->
+                            <path d="M 85 190 L 75 370 L 60 370 L 85 190 Z" />
+                            <!-- Right Leg -->
+                            <path d="M 115 190 L 125 370 L 140 370 L 115 190 Z" />
+                        </g>
+                    </svg>
+
+                    <!-- Interactive Zones & Markers -->
+                    <div class="absolute inset-0" id="body-interactive-zones">
+                        <!-- We'll use absolute divs for precise click zones and markers -->
+                        <div class="body-part absolute cursor-pointer hover:bg-white/10 transition-colors rounded-full" data-part="Head" style="top: 4%; left: 39%; width: 22%; height: 12%;"></div>
+                        <div class="body-part absolute cursor-pointer hover:bg-white/10 transition-colors" data-part="Torso" style="top: 20%; left: 35%; width: 30%; height: 27%;"></div>
+                        <div class="body-part absolute cursor-pointer hover:bg-white/10 transition-colors rounded-full" data-part="Left Arm" style="top: 20%; left: 10%; width: 20%; height: 25%; transform: rotate(15deg);"></div>
+                        <div class="body-part absolute cursor-pointer hover:bg-white/10 transition-colors rounded-full" data-part="Right Arm" style="top: 20%; right: 10%; width: 20%; height: 25%; transform: rotate(-15deg);"></div>
+                        <div class="body-part absolute cursor-pointer hover:bg-white/10 transition-colors" data-part="Left Leg" style="bottom: 5%; left: 32%; width: 15%; height: 45%;"></div>
+                        <div class="body-part absolute cursor-pointer hover:bg-white/10 transition-colors" data-part="Right Leg" style="bottom: 5%; right: 32%; width: 15%; height: 45%;"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -124,28 +178,21 @@
             </button>
             <button id="tab-spellcircle" class="flex-1 h-full flex flex-col items-center justify-center text-slate-500 hover:text-slate-300 font-bold border-t-2 border-transparent transition-colors">
                 <i class="fas fa-circle-nodes text-lg mb-1"></i>
-                <span class="text-[10px] uppercase tracking-wider">Spell Circle</span>
+                <span class="text-[10px] uppercase tracking-wider">Spells</span>
             </button>
             <button id="tab-bodies" class="flex-1 h-full flex flex-col items-center justify-center text-slate-500 hover:text-slate-300 font-bold border-t-2 border-transparent transition-colors">
-                <i class="fas fa-child text-lg mb-1"></i>
+                <i class="fas fa-person text-lg mb-1"></i>
                 <span class="text-[10px] uppercase tracking-wider">Bodies</span>
             </button>
         </div>
     </nav>
 
-    <!-- Floating Action Buttons (ItemHP) -->
-    <div id="fab-container-itemhp" class="fixed bottom-20 right-6 lg:right-auto lg:left-1/2 lg:ml-[110px] flex items-center gap-3 z-40">
+    <!-- Floating Action Buttons Container (Import & Add) -->
+    <div id="fab-container" class="fixed bottom-20 right-6 lg:right-auto lg:left-1/2 lg:ml-[110px] flex items-center gap-3 z-40 transition-opacity">
         <button id="fab-import" class="w-14 h-14 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white rounded-2xl shadow-xl shadow-slate-950/80 flex justify-center items-center text-xl transition-all duration-200 active:scale-95 border border-slate-700" title="Import Items">
             <i class="fas fa-file-import"></i>
         </button>
         <button id="fab-add" class="w-14 h-14 bg-gradient-to-tr from-red-700 to-red-500 hover:from-red-600 hover:to-red-400 text-white rounded-2xl shadow-xl shadow-red-950/80 flex justify-center items-center text-2xl transition-all duration-200 active:scale-95 border border-red-400/30" title="Add Item">
-            <i class="fas fa-plus"></i>
-        </button>
-    </div>
-
-    <!-- Floating Action Button (Bodies) -->
-    <div id="fab-container-bodies" class="hidden fixed bottom-20 right-6 z-40">
-        <button id="fab-add-body" class="w-14 h-14 bg-gradient-to-tr from-red-700 to-red-500 hover:from-red-600 hover:to-red-400 text-white rounded-2xl shadow-xl shadow-red-950/80 flex justify-center items-center text-2xl transition-all duration-200 active:scale-95 border border-red-400/30" title="Add Character">
             <i class="fas fa-plus"></i>
         </button>
     </div>
@@ -293,62 +340,6 @@
         </div>
     </div>
 
-    <!-- Body Character Modal -->
-    <div id="body-modal" class="fixed inset-0 modal-overlay z-[60] hidden flex flex-col justify-end sm:justify-center items-center p-0 sm:p-4">
-        <div class="modal-card">
-            <button id="body-modal-close" class="modal-close-btn">
-                <i class="fas fa-xmark text-lg"></i>
-            </button>
-            <h2 class="text-lg font-bold text-white mb-4" id="body-modal-title">Add Player Character</h2>
-            <form id="body-form" class="flex flex-col gap-4">
-                <div>
-                    <label class="form-label">Character Name</label>
-                    <input type="text" id="input-body-name" required class="form-input" placeholder="e.g. Thorin Oakenshield">
-                </div>
-                <div>
-                    <label class="form-label">Gender</label>
-                    <select id="input-body-gender" required class="form-input">
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                    </select>
-                </div>
-                <button type="submit" class="btn-primary mt-3">
-                    Save Character
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Body Part Note Modal -->
-    <div id="body-part-modal" class="fixed inset-0 modal-overlay z-[70] hidden flex flex-col justify-center items-center p-4">
-        <div class="bg-slate-900 w-full max-w-sm rounded-2xl p-6 shadow-2xl border border-slate-800 relative transform transition-all">
-            <button id="body-part-modal-close" class="modal-close-btn !top-3 !right-3">
-                <i class="fas fa-xmark text-lg"></i>
-            </button>
-            <h3 id="body-part-title" class="text-lg font-bold text-white mb-4">Body Part</h3>
-            <div class="flex flex-col gap-4">
-                <div>
-                    <label class="form-label">Status Color</label>
-                    <div class="flex gap-3 mt-1.5" id="body-color-palette">
-                        <button type="button" class="w-8 h-8 rounded-full bg-emerald-500 border-2 border-transparent focus:border-white transition-all" data-color="#10b981"></button>
-                        <button type="button" class="w-8 h-8 rounded-full bg-amber-500 border-2 border-transparent focus:border-white transition-all" data-color="#f59e0b"></button>
-                        <button type="button" class="w-8 h-8 rounded-full bg-red-500 border-2 border-transparent focus:border-white transition-all" data-color="#ef4444"></button>
-                        <button type="button" class="w-8 h-8 rounded-full bg-slate-500 border-2 border-transparent focus:border-white transition-all" data-color="#64748b"></button>
-                        <button type="button" class="w-8 h-8 rounded-full bg-slate-950 border-2 border-slate-700 focus:border-white transition-all" data-color="#020617"></button>
-                    </div>
-                </div>
-                <div>
-                    <label class="form-label">Description / Injury Notes</label>
-                    <textarea id="body-part-desc" class="form-textarea resize-none h-24" placeholder="Description..."></textarea>
-                </div>
-                <div class="flex gap-2.5 mt-2">
-                    <button type="button" id="body-part-clear" class="btn-secondary flex-1">Clear</button>
-                    <button type="button" id="body-part-save" class="btn-primary flex-1 shadow-none">Save</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Property Modal -->
     <div id="property-modal" class="fixed inset-0 modal-overlay z-[70] hidden flex flex-col justify-center items-center p-4">
         <div class="bg-slate-900 w-full max-w-xs rounded-2xl p-5 shadow-2xl border border-slate-800 relative transform transition-all">
@@ -373,6 +364,61 @@
             <div class="flex gap-2.5">
                 <button id="amount-cancel" class="btn-secondary flex-1 text-sm">Cancel</button>
                 <button id="amount-confirm" class="btn-primary flex-1 text-sm py-3 shadow-none">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Character Modal (Add/Edit) -->
+    <div id="character-modal" class="fixed inset-0 modal-overlay z-[60] hidden flex flex-col justify-end sm:justify-center items-center p-0 sm:p-4">
+        <div class="modal-card">
+            <button id="character-modal-close" class="modal-close-btn"><i class="fas fa-xmark text-lg"></i></button>
+            <h2 class="text-lg font-bold text-white mb-4" id="character-modal-title">Add Character</h2>
+            <form id="character-form" class="flex flex-col gap-4">
+                <div>
+                    <label class="form-label">Character Name</label>
+                    <input type="text" id="char-name" required class="form-input" placeholder="e.g. Grog Strongjaw">
+                </div>
+                <div>
+                    <label class="form-label">Gender</label>
+                    <div class="grid grid-cols-2 gap-2 mt-1">
+                        <label class="flex items-center justify-center gap-2 bg-slate-950 p-3 rounded-xl border border-slate-800 cursor-pointer hover:border-slate-700 text-sm text-slate-300 font-semibold has-[:checked]:border-red-500 has-[:checked]:bg-red-950/30 has-[:checked]:text-red-400 transition-colors">
+                            <input type="radio" name="char-gender" value="Male" checked class="accent-red-500">
+                            <i class="fas fa-mars"></i> Male
+                        </label>
+                        <label class="flex items-center justify-center gap-2 bg-slate-950 p-3 rounded-xl border border-slate-800 cursor-pointer hover:border-slate-700 text-sm text-slate-300 font-semibold has-[:checked]:border-red-500 has-[:checked]:bg-red-950/30 has-[:checked]:text-red-400 transition-colors">
+                            <input type="radio" name="char-gender" value="Female" class="accent-red-500">
+                            <i class="fas fa-venus"></i> Female
+                        </label>
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary mt-3">Save Character</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Body Part Note Modal -->
+    <div id="body-part-modal" class="fixed inset-0 modal-overlay z-[60] hidden flex flex-col justify-center items-center p-4">
+        <div class="bg-slate-900 w-full max-w-sm rounded-2xl p-5 shadow-2xl border border-slate-800 relative">
+            <button id="body-part-close" class="modal-close-btn !top-3 !right-3"><i class="fas fa-xmark text-lg"></i></button>
+            
+            <h3 id="body-part-title" class="text-lg font-bold text-white mb-4">Head</h3>
+            
+            <div class="flex flex-col gap-4">
+                <!-- Color Picker -->
+                <div class="flex gap-3">
+                    <button type="button" class="note-color-btn w-8 h-8 rounded-full bg-emerald-500 border-2 border-transparent transition-all" data-color="#10b981"></button>
+                    <button type="button" class="note-color-btn w-8 h-8 rounded-full bg-amber-400 border-2 border-transparent transition-all" data-color="#fbbf24"></button>
+                    <button type="button" class="note-color-btn w-8 h-8 rounded-full bg-red-500 border-2 border-transparent transition-all" data-color="#ef4444"></button>
+                    <button type="button" class="note-color-btn w-8 h-8 rounded-full bg-slate-500 border-2 border-transparent transition-all" data-color="#64748b"></button>
+                    <button type="button" class="note-color-btn w-8 h-8 rounded-full bg-amber-900 border-2 border-transparent transition-all" data-color="#78350f"></button>
+                </div>
+
+                <textarea id="body-part-desc" class="form-textarea resize-none h-24" placeholder="Description..."></textarea>
+
+                <div class="flex justify-between items-center mt-2">
+                    <button type="button" id="btn-clear-note" class="btn-secondary text-sm px-4">Clear</button>
+                    <button type="button" id="btn-save-note" class="btn-primary w-auto px-6 text-sm">Save</button>
+                </div>
             </div>
         </div>
     </div>
