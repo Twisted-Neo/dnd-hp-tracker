@@ -327,7 +327,7 @@ async function saveBodyCharacter(e) {
     const bodyData = {
         name,
         gender,
-        parts: {} // e.g. { head: { color: '#ef4444', desc: 'Head injury' } }
+        parts: {}
     };
 
     closeBodyModal();
@@ -347,7 +347,10 @@ async function saveBodyCharacter(e) {
     updateSyncStatus('saving', 'Saving character...');
     try {
         bodyData.createdAt = serverTimestamp();
-        await addDoc(collection(db, 'users', currentUser.uid, 'dnd_bodies'), bodyData);
+        const docRef = await addDoc(collection(db, 'users', currentUser.uid, 'dnd_bodies'), bodyData);
+        bodyData.id = docRef.id;
+        bodies.push(bodyData);
+        renderBodies();
         updateSyncStatus('connected', 'Synced');
     } catch (err) {
         console.error("Error saving character:", err);
@@ -375,6 +378,10 @@ async function deleteBodyCharacter(bodyId) {
 }
 
 function openBodyPartModal(bodyId, partId) {
+    if (!bodyId || bodyId === 'undefined' || bodyId === 'null') {
+        showError("Character ID is missing.");
+        return;
+    }
     activeBodyId = bodyId;
     activeBodyPartId = partId;
     const body = bodies.find(b => b.id === bodyId);
@@ -405,7 +412,10 @@ function closeBodyPartModal() {
 }
 
 async function saveBodyPartData(desc, color) {
-    if (!activeBodyId || !activeBodyPartId) return;
+    if (!activeBodyId || activeBodyId === 'undefined' || activeBodyId === 'null' || !activeBodyPartId) {
+        showError("Invalid character or body part.");
+        return;
+    }
     const body = bodies.find(b => b.id === activeBodyId);
     if (!body) return;
 
@@ -474,14 +484,11 @@ function renderBodies() {
             <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col items-center">
                 <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3">Body Condition Map</p>
                 
-                <!-- Silhouette / Body interactive parts -->
                 <div class="w-48 flex flex-col items-center gap-2">
-                    <!-- Head -->
                     <button class="body-part-btn w-20 h-12 rounded-full border border-slate-700 flex items-center justify-center text-xs font-semibold text-slate-200 transition-all hover:scale-105" style="background-color: ${getPartColor('head')}" data-part="head" data-id="${body.id}" title="${getPartDesc('head') || 'Head'}">
                         Head
                     </button>
                     
-                    <!-- Arms and Torso row -->
                     <div class="flex items-center gap-2 w-full justify-center">
                         <button class="body-part-btn w-12 h-24 rounded-lg border border-slate-700 flex items-center justify-center text-[11px] font-semibold text-slate-200 transition-all hover:scale-105" style="background-color: ${getPartColor('l_arm')}" data-part="l_arm" data-id="${body.id}" title="${getPartDesc('l_arm') || 'Left Arm'}">
                             L.Arm
@@ -494,7 +501,6 @@ function renderBodies() {
                         </button>
                     </div>
 
-                    <!-- Legs -->
                     <div class="flex items-center gap-3 justify-center">
                         <button class="body-part-btn w-14 h-28 rounded-lg border border-slate-700 flex items-center justify-center text-[11px] font-semibold text-slate-200 transition-all hover:scale-105" style="background-color: ${getPartColor('l_leg')}" data-part="l_leg" data-id="${body.id}" title="${getPartDesc('l_leg') || 'Left Leg'}">
                             L.Leg
