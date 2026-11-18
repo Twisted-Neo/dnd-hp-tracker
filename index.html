@@ -167,6 +167,24 @@
                 </div>
             </div>
         </div>
+        <!-- VIEW: Trackers -->
+        <div id="view-trackers" class="hidden">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h2 class="text-lg font-bold text-white">Trackers</h2>
+                    <p class="text-xs text-slate-400">Skills, EXP, points & resources</p>
+                </div>
+                <button id="btn-add-tracker" class="btn-primary w-auto px-4 py-2 text-sm flex items-center gap-2">
+                    <i class="fas fa-plus"></i> New Tracker
+                </button>
+            </div>
+
+            <!-- Optional Character Filter Bar (auto-populates when character names exist) -->
+            <div id="tracker-filter-bar" class="hidden flex gap-2 overflow-x-auto pb-2 mb-3 no-scrollbar"></div>
+
+            <!-- Trackers Container -->
+            <div id="trackers-container" class="flex flex-col gap-3.5"></div>
+        </div>
     </main>
 
     <!-- Bottom Navigation -->
@@ -183,6 +201,10 @@
             <button id="tab-bodies" class="flex-1 h-full flex flex-col items-center justify-center text-slate-500 hover:text-slate-300 font-bold border-t-2 border-transparent transition-colors">
                 <i class="fas fa-person text-lg mb-1"></i>
                 <span class="text-[10px] uppercase tracking-wider">Bodies</span>
+            </button>
+            <button id="tab-trackers" class="flex-1 h-full flex flex-col items-center justify-center text-slate-500 hover:text-slate-300 font-bold border-t-2 border-transparent transition-colors">
+                <i class="fas fa-bars-progress text-lg mb-1"></i>
+                <span class="text-[10px] uppercase tracking-wider">Trackers</span>
             </button>
         </div>
     </nav>
@@ -422,6 +444,124 @@
             </div>
         </div>
     </div>
+    <!-- Tracker Modal (Add / Edit) -->
+    <div id="tracker-modal" class="fixed inset-0 modal-overlay z-[60] hidden flex flex-col justify-end sm:justify-center items-center p-0 sm:p-4">
+        <div class="modal-card">
+            <button id="tracker-modal-close" class="modal-close-btn">
+                <i class="fas fa-xmark text-lg"></i>
+            </button>
+            <h2 class="text-lg font-bold text-white mb-4" id="tracker-modal-title">Create Tracker</h2>
+            <form id="tracker-form" class="flex flex-col gap-4">
+                <div>
+                    <label class="form-label">Tracker Name</label>
+                    <input type="text" id="tracker-name" required class="form-input" placeholder="e.g. Carpentry, Ki Points, Spell Slots...">
+                </div>
+
+                <div>
+                    <label class="form-label">Character Name <span class="text-slate-500 font-normal lowercase">(optional)</span></label>
+                    <input type="text" id="tracker-char-name" class="form-input" placeholder="Leave blank for general/party tracker">
+                </div>
+
+                <div class="flex gap-3">
+                    <div class="flex-1">
+                        <label class="form-label">Preset Type</label>
+                        <select id="tracker-preset" class="form-input cursor-pointer">
+                            <option value="pz-skill">EXP / Skills Progressbar</option>
+                            <option value="points">Points Tally</option>
+                            <option value="slots">Resource / Pips</option>
+                            <option value="custom">Custom Counter</option>
+                        </select>
+                    </div>
+                    <div class="w-20">
+                        <label class="form-label">Color</label>
+                        <input type="color" id="tracker-color" value="#eab308" class="w-full h-[46px] rounded-xl cursor-pointer">
+                    </div>
+                </div>
+
+                <!-- Dynamic Preset Configuration Fields -->
+                <!-- 1. PZ Skill / EXP Config -->
+                <div id="preset-config-pz" class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col gap-3">
+                    <div class="flex gap-2">
+                        <div class="flex-1">
+                            <label class="form-label !text-[10px]">Current Level</label>
+                            <input type="number" id="pz-level" class="form-input !py-2" value="0" min="0" max="10">
+                        </div>
+                        <div class="flex-1">
+                            <label class="form-label !text-[10px]">Max Levels</label>
+                            <input type="number" id="pz-max-level" class="form-input !py-2" value="10" min="1" max="20">
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <div class="flex-1">
+                            <label class="form-label !text-[10px]">Current EXP</label>
+                            <input type="number" id="pz-exp" class="form-input !py-2" value="0" min="0">
+                        </div>
+                        <div class="flex-1">
+                            <label class="form-label !text-[10px]">EXP Per Level</label>
+                            <input type="number" id="pz-exp-req" class="form-input !py-2" value="100" min="1">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Points Tally Config -->
+                <div id="preset-config-points" class="hidden bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col gap-3">
+                    <div class="flex gap-2">
+                        <div class="flex-1">
+                            <label class="form-label !text-[10px]">Starting Points</label>
+                            <input type="number" id="points-current" class="form-input !py-2" value="0">
+                        </div>
+                        <div class="flex-1">
+                            <label class="form-label !text-[10px]">Max Points <span class="text-slate-600">(optional)</span></label>
+                            <input type="number" id="points-max" class="form-input !py-2" placeholder="None">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Resource / Pips Config -->
+                <div id="preset-config-slots" class="hidden bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col gap-3">
+                    <div class="flex gap-2">
+                        <div class="flex-1">
+                            <label class="form-label !text-[10px]">Available Pips</label>
+                            <input type="number" id="slots-current" class="form-input !py-2" value="3" min="0" max="20">
+                        </div>
+                        <div class="flex-1">
+                            <label class="form-label !text-[10px]">Total Pips</label>
+                            <input type="number" id="slots-max" class="form-input !py-2" value="3" min="1" max="20">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Custom Counter Config -->
+                <div id="preset-config-custom" class="hidden bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col gap-3">
+                    <div class="flex gap-2">
+                        <div class="flex-1">
+                            <label class="form-label !text-[10px]">Current Value</label>
+                            <input type="number" id="custom-current" class="form-input !py-2" value="0">
+                        </div>
+                        <div class="flex-1">
+                            <label class="form-label !text-[10px]">Step +/- Amount</label>
+                            <input type="number" id="custom-step" class="form-input !py-2" value="5" min="1">
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <div class="flex-1">
+                            <label class="form-label !text-[10px]">Unit Label <span class="text-slate-600">(optional)</span></label>
+                            <input type="text" id="custom-unit" class="form-input !py-2" placeholder="e.g. gp, ft, charges">
+                        </div>
+                        <div class="flex-1">
+                            <label class="form-label !text-[10px]">Max Cap <span class="text-slate-600">(optional)</span></label>
+                            <input type="number" id="custom-max" class="form-input !py-2" placeholder="None">
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary mt-2">
+                    Save Tracker
+                </button>
+            </form>
+        </div>
+    </div>
+
 
     <div id="error-toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-950 border border-red-800 text-red-200 px-4 py-2.5 rounded-xl shadow-xl z-[100] hidden opacity-0 transition-opacity flex items-center gap-2 text-xs font-semibold">
         <i class="fas fa-triangle-exclamation text-red-400"></i>
