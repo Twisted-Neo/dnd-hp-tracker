@@ -20,7 +20,7 @@
                 </div>
                 <div>
                     <h1 class="text-base font-extrabold tracking-tight text-white leading-none">Neo Tools</h1>
-                    <p class="text-[11px] font-medium text-slate-400 mt-0.5">D&D tools made by Neo Nieminen</p>
+                    <p class="text-[11px] font-medium text-slate-400 mt-0.5">D&amp;D tools made by Neo Nieminen</p>
                 </div>
             </div>
 
@@ -38,7 +38,7 @@
 
     <!-- Main Container -->
     <main class="max-w-md mx-auto w-full px-4 pt-5 pb-8">
-        
+
         <!-- Account Status Banner -->
         <div id="auth-banner" class="hidden mb-4 p-3 bg-amber-950/40 border border-amber-800/50 rounded-xl flex items-center justify-between text-xs text-amber-200">
             <div class="flex items-center gap-2">
@@ -62,7 +62,7 @@
         <div id="view-spellcircle" class="hidden">
             <div class="card-panel flex flex-col items-center mb-6">
                 <h2 class="text-sm font-bold text-slate-300 mb-2 uppercase tracking-widest">Draw Combination</h2>
-                
+
                 <!-- Drawing Canvas -->
                 <div id="spell-canvas-container" class="relative w-[260px] h-[260px] my-2 bg-slate-950 rounded-full border border-slate-800 shadow-inner">
                     <svg id="spell-lines" class="absolute inset-0 w-full h-full pointer-events-none z-10"></svg>
@@ -117,7 +117,7 @@
                 <button id="btn-back-to-bodies" class="text-xs font-bold text-slate-400 hover:text-white mb-4 flex items-center gap-1">
                     <i class="fas fa-arrow-left"></i> Back to Characters
                 </button>
-                
+
                 <div class="text-center mb-4">
                     <h2 id="active-body-name" class="text-xl font-extrabold text-white"></h2>
                     <p id="active-body-gender" class="text-xs text-slate-400 uppercase tracking-wider font-bold"></p>
@@ -156,7 +156,7 @@
 
                     <!-- Interactive Zones & Markers -->
                     <div class="absolute inset-0" id="body-interactive-zones">
-                        <!-- We'll use absolute divs for precise click zones and markers -->
+                        <!-- Absolute divs for precise click zones and markers -->
                         <div class="body-part absolute cursor-pointer hover:bg-white/10 transition-colors rounded-full" data-part="Head" style="top: 4%; left: 39%; width: 22%; height: 12%;"></div>
                         <div class="body-part absolute cursor-pointer hover:bg-white/10 transition-colors" data-part="Torso" style="top: 20%; left: 35%; width: 30%; height: 27%;"></div>
                         <div class="body-part absolute cursor-pointer hover:bg-white/10 transition-colors rounded-full" data-part="Left Arm" style="top: 20%; left: 10%; width: 20%; height: 25%; transform: rotate(15deg);"></div>
@@ -167,12 +167,13 @@
                 </div>
             </div>
         </div>
+
         <!-- VIEW: Trackers -->
         <div id="view-trackers" class="hidden">
             <div class="flex justify-between items-center mb-4">
                 <div>
                     <h2 class="text-lg font-bold text-white">Trackers</h2>
-                    <p class="text-xs text-slate-400">Skills, EXP, points & resources</p>
+                    <p class="text-xs text-slate-400">Skills, EXP, points &amp; resources</p>
                 </div>
                 <button id="btn-add-tracker" class="btn-primary w-auto px-4 py-2 text-sm flex items-center gap-2">
                     <i class="fas fa-plus"></i> New Tracker
@@ -227,14 +228,14 @@
             </button>
             <h2 class="text-lg font-bold text-white mb-2" id="import-modal-title">Import Data</h2>
             <p id="import-modal-desc" class="text-xs text-slate-400 mb-4 leading-relaxed">Paste your JSON code below to import items. You can also copy the template to see the required format.</p>
-            
+
             <div class="flex flex-col gap-4">
                 <div class="flex justify-between items-center">
                     <button type="button" id="btn-copy-template" class="btn-secondary text-xs py-2 px-3 border border-slate-800 flex items-center gap-1.5">
                         <i class="fas fa-copy"></i> Copy Template
                     </button>
                 </div>
-                
+
                 <div>
                     <textarea id="import-textarea" required placeholder="Paste JSON code here..." class="form-textarea resize-none h-36 font-mono text-xs"></textarea>
                 </div>
@@ -422,9 +423,9 @@
     <div id="body-part-modal" class="fixed inset-0 modal-overlay z-[60] hidden flex flex-col justify-center items-center p-4">
         <div class="bg-slate-900 w-full max-w-sm rounded-2xl p-5 shadow-2xl border border-slate-800 relative">
             <button id="body-part-close" class="modal-close-btn !top-3 !right-3"><i class="fas fa-xmark text-lg"></i></button>
-            
+
             <h3 id="body-part-title" class="text-lg font-bold text-white mb-4">Head</h3>
-            
+
             <div class="flex flex-col gap-4">
                 <!-- Color Picker -->
                 <div class="flex gap-3">
@@ -444,6 +445,7 @@
             </div>
         </div>
     </div>
+
     <!-- Tracker Modal (Add / Edit) -->
     <div id="tracker-modal" class="fixed inset-0 modal-overlay z-[60] hidden flex flex-col justify-end sm:justify-center items-center p-0 sm:p-4">
         <div class="modal-card">
@@ -562,12 +564,13 @@
         </div>
     </div>
 
-
+    <!-- Error Toast -->
     <div id="error-toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-950 border border-red-800 text-red-200 px-4 py-2.5 rounded-xl shadow-xl z-[100] hidden opacity-0 transition-opacity flex items-center gap-2 text-xs font-semibold">
         <i class="fas fa-triangle-exclamation text-red-400"></i>
         <span id="error-message"></span>
     </div>
 
+    <!-- Module entry point: wires up all feature modules in ./src/ -->
     <script type="module" src="app.js"></script>
 </body>
 </html>
