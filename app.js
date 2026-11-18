@@ -197,8 +197,7 @@ async function initApp() {
 function initNavigation() {
     const views = [viewItemHp, viewSpellCircle, viewBodies, viewTrackers];
     const tabs = [tabItemHp, tabSpellCircle, tabBodies, tabTrackers];
-    tabTrackers.addEventListener('click', () => switchTab(tabTrackers, viewTrackers));
-    s
+
     function switchTab(activeTab, activeView) {
         views.forEach(v => v.classList.add('hidden'));
         activeView.classList.remove('hidden');
@@ -224,6 +223,7 @@ function initNavigation() {
     tabItemHp.addEventListener('click', () => switchTab(tabItemHp, viewItemHp));
     tabSpellCircle.addEventListener('click', () => switchTab(tabSpellCircle, viewSpellCircle));
     tabBodies.addEventListener('click', () => switchTab(tabBodies, viewBodies));
+    tabTrackers.addEventListener('click', () => switchTab(tabTrackers, viewTrackers));
 }
 
 // ---------------------------------------------
